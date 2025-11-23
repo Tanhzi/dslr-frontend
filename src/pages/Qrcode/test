@@ -1,0 +1,410 @@
+import React, { useRef, useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import QRCode from 'qrcode';
+import gifshot from 'gifshot';
+import './qr.css';
+import { useCountdown } from "../../contexts/CountdownContext";
+
+const generateSessionId = () => {
+  return Date.now().toString(36) + Math.random().toString(36).substr(2);
+};
+
+function Qr() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { id_pay, id_frame, photos, finalImage, size, cut } = location.state || {};
+
+  const getAuth = () => {
+    const saved = localStorage.getItem('auth');
+    return saved ? JSON.parse(saved) : null;
+  };
+
+  const [auth, setAuth] = useState(getAuth());
+  const { id_admin } = auth || {};
+
+  const [downloadPageQr, setDownloadPageQr] = useState(null);
+  const [isProcessing, setIsProcessing] = useState(true);
+  const [processingMessage, setProcessingMessage] = useState('Đang khởi tạo...');
+  const [showQrOverlay, setShowQrOverlay] = useState(false);
+  const [finalImageWithQr, setFinalImageWithQr] = useState(null);
+  const [videoConfig, setVideoConfig] = useState({ video: 0 });
+  const [gifBase64, setGifBase64] = useState(null);
+  const [isGifReady, setIsGifReady] = useState(false);
+  const [sessionId, setSessionId] = useState(null);
+  const [isContinuing, setIsContinuing] = useState(false);
+
+  // ✅ State mới cho email
+  const [email, setEmail] = useState('');
+  const [emailSent, setEmailSent] = useState(false);
+
+  const { formattedCountdown, countdown } = useCountdown();
+
+  // Hàm upload collection
+  const uploadCollection = async (filesToUpload, sessionId, downloadLink) => {
+    setProcessingMessage('Đang tải lên máy chủ...');
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/media`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          files: filesToUpload,
+          session_id: sessionId,
+          id_admin: id_admin,
+          download_link: downloadLink,
+        }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        console.log('Upload bộ sưu tập thành công!', data);
+        return true;
+      } else {
+        throw new Error(data.error || 'Lỗi không xác định từ server');
+      }
+    } catch (error) {
+      console.error('Lỗi khi upload bộ sưu tập:', error);
+      alert('Lỗi khi upload: ' + error.message);
+      return false;
+    }
+  };
+
+  // Gửi ảnh QR qua email
+  const sendQrEmail = async () => {
+    if (!email || !sessionId) return;
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/send-qr-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: email,
+          session_id: sessionId,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Gửi email thất bại');
+      setEmailSent(true);
+    } catch (error) {
+      console.error('Lỗi gửi email:', error);
+      alert('Gửi email thất bại: ' + error.message);
+    }
+  };
+
+  // Cập nhật id_frame, id_qr và email
+  const updateIdFrameAndIdQr = async (id, id_frame, id_qr, email = null) => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/update-pay`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id,
+          id_frame,
+          id_qr,
+          email,
+        }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        console.log('Cập nhật id_frame, id_qr và email thành công!', data);
+        if (email) setEmailSent(true);
+      } else {
+        throw new Error(data.error || 'Lỗi không xác định từ server');
+      }
+    } catch (error) {
+      console.error('Lỗi khi cập nhật id_frame và id_qr:', error);
+      alert('Lỗi khi cập nhật: ' + error.message);
+    }
+  };
+
+  const navigateToChoose = async () => {
+    let finalImageToUse = finalImage;
+    if (showQrOverlay && downloadPageQr) {
+      finalImageToUse = await addQrToImage(finalImage, downloadPageQr);
+    }
+
+    navigate('/choose', {
+      state: {
+        compositeImage: finalImageToUse,
+        qrImage: downloadPageQr,
+        size,
+        cut,
+      },
+    });
+  };
+
+  const handleContinue = () => {
+    if (isContinuing) return;
+    setIsContinuing(true);
+
+    if (id_pay == null || id_frame == null || sessionId == null) {
+      alert('Thiếu dữ liệu để cập nhật: id_pay, id_frame hoặc sessionId');
+      setIsContinuing(false);
+      return;
+    }
+
+    const emailTrimmed = email.trim();
+    if (emailTrimmed) {
+      sendQrEmail().catch(err => console.error('Gửi email thất bại:', err));
+    }
+
+    updateIdFrameAndIdQr(id_pay, id_frame, sessionId, emailTrimmed || null)
+      .catch(err => console.error('Cập nhật DB thất bại:', err));
+
+    navigateToChoose();
+  };
+
+  useEffect(() => {
+    if (countdown === 0 && !isProcessing && downloadPageQr) {
+      handleContinue();
+    }
+  }, [countdown, isProcessing, downloadPageQr]);
+
+  const processAndGenerateQr = async () => {
+    if (!finalImage) {
+      alert('Không có ảnh cuối cùng để xử lý.');
+      setIsProcessing(false);
+      return;
+    }
+
+    if (videoConfig.video === 1 && !isGifReady) {
+      setProcessingMessage('Đang chờ tạo GIF...');
+      return;
+    }
+
+    try {
+      const newSessionId = generateSessionId();
+      setSessionId(newSessionId);
+
+      const downloadPageUrl = `${import.meta.env.VITE_API_BASE_URL}/download?session_id=${newSessionId}`;
+      const qrCodeDataUrl = await QRCode.toDataURL(downloadPageUrl, {
+        width: 256,
+        margin: 2,
+      });
+
+      setDownloadPageQr(qrCodeDataUrl);
+      setProcessingMessage('Hoàn tất!');
+
+      const filesToUpload = [{ data: qrCodeDataUrl, type: 'qr' }];
+      filesToUpload.push({ data: finalImage, type: 'composite' });
+      photos.forEach((photoData) => filesToUpload.push({ data: photoData, type: 'single' }));
+      if (videoConfig.video === 1 && gifBase64) {
+        filesToUpload.push({ data: gifBase64, type: 'gif' });
+      }
+
+      const uploadSuccess = await uploadCollection(filesToUpload, newSessionId, downloadPageUrl);
+      if (!uploadSuccess) throw new Error('Upload thất bại');
+    } catch (error) {
+      console.error('Lỗi trong quá trình xử lý:', error);
+      alert('Lỗi khi tạo mã QR: ' + error.message);
+    }
+    setIsProcessing(false);
+  };
+
+  useEffect(() => {
+    async function processGif() {
+      if (photos && photos.length > 0) {
+        try {
+          setProcessingMessage('Đang lấy cấu hình video...');
+          const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/camera?id_admin=${id_admin}`);
+          const config = await res.json();
+          setVideoConfig(config);
+
+          if (config.video === 1) {
+            setProcessingMessage('Đang tạo GIF...');
+            gifshot.createGIF(
+              {
+                images: photos,
+                interval: config.interval || 0.5,
+                gifWidth: config.gifWidth || 640,
+                gifHeight: config.gifHeight || 480,
+              },
+              (obj) => {
+                if (!obj.error) {
+                  setGifBase64(obj.image);
+                }
+                setIsGifReady(true);
+              }
+            );
+          } else {
+            setIsGifReady(true);
+          }
+        } catch (err) {
+          console.error('Lỗi khi lấy config video hoặc tạo GIF:', err);
+          setIsGifReady(true);
+        }
+      }
+    }
+    processGif();
+  }, [photos, id_admin]);
+
+  useEffect(() => {
+    if (isGifReady && isProcessing && !downloadPageQr) {
+      processAndGenerateQr();
+    }
+  }, [isGifReady, isProcessing, downloadPageQr]);
+
+  const addQrToImage = (imageSrc, qrSrc) => {
+    return new Promise((resolve) => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(img, 0, 0);
+
+        if (qrSrc && showQrOverlay) {
+          const qrImg = new Image();
+          qrImg.crossOrigin = 'anonymous';
+          qrImg.onload = () => {
+            const qrSize = Math.min(canvas.width * 0.15, 100);
+            const margin = 10;
+            const qrX = canvas.width - qrSize - margin;
+            const qrY = canvas.height - qrSize - margin;
+
+            const now = new Date();
+            const day = String(now.getDate()).padStart(2, '0');
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const year = String(now.getFullYear()).slice(-2);
+            const dateStr = `${day}-${month}-${year}`;
+
+            ctx.font = `bold ${qrSize * 0.15}px Arial`;
+            const textWidth = ctx.measureText(dateStr).width;
+            const spacing = 15;
+            const totalWidth = textWidth + spacing + qrSize;
+            const startX = canvas.width - margin - totalWidth;
+            const padding = 10;
+            const backgroundHeight = qrSize + padding * 2;
+
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+            ctx.fillRect(startX - padding, qrY - padding, totalWidth + padding * 2, backgroundHeight);
+
+            ctx.fillStyle = '#000';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(dateStr, startX, qrY + qrSize / 2);
+
+            ctx.drawImage(qrImg, startX + textWidth + spacing, qrY, qrSize, qrSize);
+            resolve(canvas.toDataURL('image/jpeg'));
+          };
+          qrImg.src = qrSrc;
+        } else {
+          resolve(imageSrc);
+        }
+      };
+      img.src = imageSrc;
+    });
+  };
+
+  useEffect(() => {
+    if (finalImage && downloadPageQr) {
+      const updatePreview = async () => {
+        const newImage = await addQrToImage(finalImage, downloadPageQr);
+        setFinalImageWithQr(newImage);
+      };
+      updatePreview();
+    }
+  }, [showQrOverlay, finalImage, downloadPageQr]);
+
+  // === JSX MỚI VỚI 2 CỘT ===
+  return (
+    <div className="qr-container">
+      <div className="countdown">⏳: {formattedCountdown}</div>
+      <h1 className="touch-to-crecuts mau_h1">TẠO MÃ QR ĐỂ TẢI XUỐNG</h1>
+
+      <div className="qr-layout box5">
+        {/* CỘT TRÁI: Ảnh preview */}
+        <div className="preview-column">
+          {isProcessing ? (
+            <div className="loading-content">
+              <div className="loading-indicator">
+                <p>{processingMessage}</p>
+                <div className="loading-spinner"></div>
+              </div>
+              {finalImage && (
+                <img
+                  src={finalImage}
+                  alt="Ảnh đang xử lý"
+                  className="preview-image-main"
+                />
+              )}
+            </div>
+          ) : downloadPageQr ? (
+            <div className="image-preview-wrapper">
+              <img
+                src={finalImageWithQr || finalImage}
+                alt="Ảnh preview"
+                className="preview-image-main"
+              />
+            </div>
+          ) : (
+            <div className="error-content">
+              <p>Có lỗi xảy ra trong quá trình tạo mã QR.</p>
+              {finalImage && (
+                <img src={finalImage} alt="Ảnh cuối cùng" className="preview-image-main" />
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* CỘT PHẢI: QR + Email */}
+        <div className="qr-column">
+          {!isProcessing && downloadPageQr && (
+            <>
+              {/* Form email */}
+              <div className="email-section">
+                {!emailSent ? (
+                  <>
+                    <label className="email-label">Nhập email để nhận ảnh qua email:</label>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="example@gmail.com"
+                      className="email-input"
+                    />
+                  </>
+                ) : (
+                  <div className="email-success">✅ Đã gửi thông tin vào email!</div>
+                )}
+              </div>
+
+              {/* Toggle QR trên ảnh */}
+              <div className="qr-toggle-wrapper">
+                <label className="qr-toggle">
+                  <input
+                    type="checkbox"
+                    checked={showQrOverlay}
+                    onChange={(e) => setShowQrOverlay(e.target.checked)}
+                  />
+                  <span>In QR lên ảnh</span>
+                </label>
+              </div>
+
+              {/* Mã QR tải về */}
+              <div className="qr-code-section">
+                <h3 className="color">Mã QR tải ảnh</h3>
+                <img
+                  src={downloadPageQr}
+                  alt="Mã QR cho trang download"
+                  className="qr-image"
+                />
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
+      <div className="continue-container">
+        <button
+          className="continue-button"
+          onClick={handleContinue}
+          disabled={!downloadPageQr || isProcessing || isContinuing}
+        >
+          {isContinuing ? 'ĐANG XỬ LÝ...' : 'TIẾP TỤC'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export default Qr;

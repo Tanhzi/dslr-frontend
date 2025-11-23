@@ -1,0 +1,9 @@
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  overflow-x: hidden;
+  background-color: #fff0f5;
+  font-family: 'Quicksand', 'Arial', sans-serif; 
+}

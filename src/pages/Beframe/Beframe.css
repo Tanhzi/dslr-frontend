@@ -1,0 +1,383 @@
+/* ======== Beframe.css — PHIÊN BẢN TỐI ƯU THEO YÊU CẦU ======== */
+
+.frame-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+/* Đếm ngược — góc trên trái */
+.countdown {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  font-size: 22px;
+  font-weight: 800;
+  color: #d81b60;
+  padding: 8px 16px;
+  border-radius: 50px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.countdown::before {
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+/* Tiêu đề chính */
+.touch-to-crecuts {
+  font-size: 36px;
+  color: #d81b60;
+  font-weight: 800;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin: 30px 0 40px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.05);
+  animation: pulse 2s infinite;
+}
+
+/* ======== NỘI DUNG CHÍNH — CHIA 50% - 50% ======== */
+.frame-content {
+  display: flex;
+  width: 100%;
+  max-width: 1400px;
+  height: calc(100vh - 300px); /* Trừ header + footer */
+  gap: 30px;
+  box-sizing: border-box;
+}
+
+/* Cột trái — 50% — hiển thị khung ảnh lớn */
+.col-left {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 24px;
+  padding: 20px;
+  box-shadow: 0 6px 20px rgba(255, 105, 180, 0.1);
+  border: 3px solid #ffb6c1;
+  overflow: hidden;
+}
+
+.image-wrapper {
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: 4px solid #ffb6c1;
+  border-radius: 20px;
+  background: #fff9fb;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
+
+.selected-frame-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transition: transform 0.3s ease;
+}
+
+.selected-frame-image:hover {
+  transform: scale(1.02);
+}
+
+.no-image {
+  color: #ff69b4;
+  font-style: italic;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+/* Cột phải — 50% — phần chọn khung */
+.col-right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 360px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 24px;
+  padding: 20px;
+  box-shadow: 0 6px 20px rgba(255, 105, 180, 0.1);
+  border: 3px solid #ffb6c1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ======== TAB — HIỂN THỊ 1 HÀNG NGANG + SCROLL NGANG NẾU TRÀN ======== */
+.frame-tabs {
+  display: flex;
+  gap: 12px;
+  padding: 8px 0;
+  margin-bottom: 20px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #ff69b4 #fff0f5;
+  -ms-overflow-style: none; /* Ẩn thanh scroll mặc định trên IE/Edge */
+}
+
+.frame-tabs::-webkit-scrollbar {
+  display: none; /* Ẩn thanh scroll trên Webkit */
+}
+
+/* Wrapper cho các tab — để scroll ngang */
+.frame-tabs-wrapper {
+  display: flex;
+  gap: 12px;
+  padding: 4px 8px;
+  min-width: max-content; /* Bắt buộc nằm ngang */
+}
+
+.tab {
+  padding: 12px 24px;
+  white-space: nowrap; /* Không cho ngắt dòng */
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-size: 18px;
+  color: #ff69b4;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  position: relative;
+  border-radius: 50px;
+  flex-shrink: 0; /* Không cho co lại */
+}
+
+.tab:hover {
+  color: #d81b60;
+  background: rgba(255, 105, 180, 0.1);
+}
+
+.tab.active {
+  color: #d81b60;
+  font-weight: 800;
+}
+
+.tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60%;
+  height: 3px;
+  background: linear-gradient(90deg, #ff69b4, #d81b60);
+  border-radius: 3px;
+}
+
+/* ======== THUMBNAIL — HIỂN THỊ 3 ẢNH/HÀNG + SCROLL DỌC ======== */
+.frame-thumbnails {
+  flex: 1;
+  width: 100%;
+  padding: 10px 0;
+  overflow-y: auto;
+  border-radius: 16px;
+  background: #fff9fb;
+  border: 2px solid #ffb6c1;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.05);
+  scrollbar-width: thin;
+  scrollbar-color: #ff69b4 #fff0f5;
+}
+
+.frame-thumbnails::-webkit-scrollbar {
+  width: 8px;
+}
+
+.frame-thumbnails::-webkit-scrollbar-track {
+  background: #fff0f5;
+  border-radius: 4px;
+}
+
+.frame-thumbnails::-webkit-scrollbar-thumb {
+  background: #ff69b4;
+  border-radius: 4px;
+  border: 2px solid #fff0f5;
+}
+
+.frame-thumbnails::-webkit-scrollbar-thumb:hover {
+  background: #d81b60;
+}
+
+/* Grid 3 cột */
+.thumbnails-wrapper {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  padding: 16px;
+  min-width: 100%;
+  box-sizing: border-box;
+}
+
+.thumbnail {
+  max-width: 180px;
+  max-height: 180px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: rgb(255, 237, 252);
+  padding: 5px;
+  box-sizing: border-box;
+}
+
+.thumbnail:hover {
+  transform: translateY(-6px) scale(1.05);
+  box-shadow: 0 8px 20px rgba(255, 105, 180, 0.2);
+  border-color: #ffb6c1;
+}
+
+.thumbnail.selected {
+  border-color: #d81b60;
+  box-shadow: 0 0 0 3px rgba(216, 27, 96, 0.2), 0 6px 16px rgba(216, 27, 96, 0.1);
+  transform: translateY(-3px);
+}
+
+/* Footer — nút tiếp tục */
+.frame-footer {
+  margin-top: 40px;
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  justify-content: center;
+}
+
+.continue-btn {
+  background: linear-gradient(135deg, #ff69b4, #d81b60);
+  color: white;
+  border: none;
+  padding: 18px 45px;
+  font-size: 22px;
+  font-weight: 700;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: all 0.4s ease;
+  box-shadow: 0 5px 15px rgba(216, 27, 96, 0.3);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  width: 100%;
+  max-width: 300px;
+}
+
+.continue-btn:hover {
+  background: linear-gradient(135deg, #d81b60, #c71585);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(199, 21, 133, 0.4);
+}
+
+.continue-btn:active {
+  transform: translateY(0);
+}
+
+/* Responsive — trên mobile chuyển cột dọc */
+@media (max-width: 1024px) {
+  .frame-content {
+    flex-direction: column;
+    height: auto;
+    gap: 25px;
+  }
+
+  .col-left,
+  .col-right {
+    width: 100%;
+    max-width: none;
+    min-width: auto;
+    height: auto;
+  }
+
+  .image-wrapper {
+    max-height: 50vh;
+  }
+}
+
+@media (max-width: 768px) {
+  .frame-container {
+    padding: 30px 15px 50px;
+  }
+
+  .countdown {
+    top: 15px;
+    left: 15px;
+    font-size: 20px;
+    padding: 6px 12px;
+  }
+
+  .touch-to-crecuts {
+    font-size: 28px;
+    margin: 20px 0 30px;
+  }
+
+  .col-left,
+  .col-right {
+    padding: 16px;
+    border-radius: 20px;
+  }
+
+  .frame-tabs {
+    padding: 6px 0;
+  }
+
+  .tab {
+    padding: 10px 18px;
+    font-size: 16px;
+  }
+
+  .thumbnails-wrapper {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .thumbnail {
+    border-radius: 12px;
+  }
+
+  .continue-btn {
+    padding: 16px 40px;
+    font-size: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .touch-to-crecuts {
+    font-size: 24px;
+    margin: 15px 0 25px;
+  }
+
+  .thumbnails-wrapper {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .thumbnail {
+    border-radius: 10px;
+  }
+
+  .tab {
+    padding: 8px 16px;
+    font-size: 14px;
+  }
+
+  .continue-btn {
+    padding: 14px 36px;
+    font-size: 18px;
+  }
+}

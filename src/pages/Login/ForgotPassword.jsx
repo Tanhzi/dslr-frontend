@@ -122,7 +122,7 @@ function ForgotPassword() {
 
       if (data.status === 'success') {
         setMessage('Đổi mật khẩu thành công! Đang chuyển hướng...');
-        setTimeout(() => navigate('/login'), 2000);
+        setTimeout(() => navigate('/'), 1000);
       } else {
         setMessage(data.message || 'Đổi mật khẩu thất bại. Vui lòng thử lại.');
       }

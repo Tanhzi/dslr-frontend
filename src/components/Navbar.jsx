@@ -32,6 +32,8 @@ const Navbar = ({ sidebarCollapsed, onToggleSidebar }) => {
   const NotificationRevenue = () => goTo('/Revenue');
   const NotificationRating = () => goTo('/Rating');
   const NotificationAccountUser = () => goTo('/AccountUser');
+  const NotificationSettings = () => goTo('/Sticker');
+  const NotificationSticker = () => goTo('/AiTopic');
 
   const toggleSettings = (e) => {
     e.preventDefault();
@@ -118,31 +120,43 @@ const Navbar = ({ sidebarCollapsed, onToggleSidebar }) => {
                 <li>
                   <a onClick={NotificationEvent} className={currentPath === '/Event' ? 'active' : ''}>
                     <span className="micon bi bi-calendar-event" />
-                    <span className="mtext">Sự kiện</span>
+                    <span className="mtext">Quản lí background</span>
                   </a>
                 </li>
                 <li>
                   <a onClick={NotificationPromotion} className={currentPath === '/Promotion' ? 'active' : ''}>
                     <span className="micon bi bi-percent" />
-                    <span className="mtext">Khuyến mãi</span>
+                    <span className="mtext">Quản lí mã khuyến mãi</span>
                   </a>
                 </li>
                 <li>
                   <a onClick={NotificationManageqr} className={currentPath === '/ManageQR' ? 'active' : ''}>
                     <span className="micon bi bi-qr-code" />
-                    <span className="mtext">Quản lí QR</span>
+                    <span className="mtext">Quản lí mã QR</span>
                   </a>
                 </li>
                 <li>
                   <a onClick={NotificationAccountUser} className={currentPath === '/AccountUser' ? 'active' : ''}>
                     <span className="micon bi bi-people" />
-                    <span className="mtext">Quản lí Tài khoản</span>
+                    <span className="mtext">Quản lí tài khoản</span>
                   </a>
                 </li>
                 <li>
                   <a onClick={NotificationRating} className={currentPath === '/Rating' ? 'active' : ''}>
                     <span className="micon bi bi-star-fill" />
-                    <span className="mtext">Quản lí Đánh giá</span>
+                    <span className="mtext">Quản lí đánh giá</span>
+                  </a>
+                </li>
+                <li>
+                  <a onClick={NotificationSettings} className={currentPath === '/Sticker' ? 'active' : ''}>
+                    <span className="micon bi bi-stickies" />
+                    <span className="mtext">Quản lí sticker</span>
+                  </a>
+                </li>
+                <li>
+                  <a onClick={NotificationSticker} className={currentPath === '/AiTopic' ? 'active' : ''}>
+                    <span className="micon bi bi-lightning-fill" />
+                    <span className="mtext">Quản lí hiệu ứng AI</span>
                   </a>
                 </li>
                 <li className={`dropdown ${settingsOpen ? 'open' : ''}`}>
@@ -154,22 +168,22 @@ const Navbar = ({ sidebarCollapsed, onToggleSidebar }) => {
                     onClick={toggleSettings}
                   >
                     <span className="micon bi bi-gear" />
-                    <span className="mtext">Thiết lập</span>
+                    <span className="mtext">Quản lí thiết lập</span>
                   </a>
                   <ul className="submenu">
                     <li>
                       <a className="px-5" onClick={NotificationFrameAD}>
-                        <i className="bi bi-images me-2" /> Khung ảnh
+                        <i className="bi bi-images me-2" /> Thiết lập khung ảnh
                       </a>
                     </li>
                     <li>
                       <a className="px-5" onClick={NotificationPricecut}>
-                        <i className="bi bi-cash-coin me-2" /> Giá tiền
+                        <i className="bi bi-cash-coin me-2" /> Thiết lập giá tiền
                       </a>
                     </li>
                     <li>
                       <a className="px-5" onClick={NotificationCamera}>
-                        <i className="bi bi-camera-fill me-2" /> Máy ảnh
+                        <i className="bi bi-camera-fill me-2" /> Thiết lập máy ảnh
                       </a>
                     </li>
                   </ul>
@@ -177,7 +191,7 @@ const Navbar = ({ sidebarCollapsed, onToggleSidebar }) => {
                 <li>
                   <a onClick={NotificationRevenue} className={currentPath === '/Revenue' ? 'active' : ''}>
                     <span className="micon bi bi-bar-chart-line" />
-                    <span className="mtext">Doanh thu</span>
+                    <span className="mtext">Quản lí doanh thu</span>
                   </a>
                 </li>
               </ul>

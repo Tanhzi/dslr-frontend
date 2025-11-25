@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import QRCode from 'qrcode';
 import gifshot from 'gifshot';
 import './qr.css';
+import Chatbot from '../../components/Chatbot';
 import { useCountdown } from "../../contexts/CountdownContext";
 
 const generateSessionId = () => {
@@ -22,7 +23,6 @@ function Qr() {
   const [auth, setAuth] = useState(getAuth());
   const { id_admin } = auth || {};
 
-  // ✅ Trạng thái cho QR ảo (chỉ hiển thị preview)
   const [previewQr, setPreviewQr] = useState(null);
   const [finalImageWithQr, setFinalImageWithQr] = useState(null);
   const [showQrOverlay, setShowQrOverlay] = useState(false);
@@ -34,7 +34,56 @@ function Qr() {
 
   const { formattedCountdown, countdown } = useCountdown();
 
-  // === Tạo QR ảo để preview (không có session thật) ===
+  // === BÀN PHÍM ẢO — GIỐNG HẾT DOWNLOAD.JSX ===
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+  const [isCaps, setIsCaps] = useState(false);
+  const keyboardRef = useRef(null);
+  const emailInputRef = useRef(null);
+
+  // Đóng bàn phím khi click ra ngoài
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (keyboardRef.current && !keyboardRef.current.contains(e.target)) {
+        setIsKeyboardOpen(false);
+      }
+    };
+    if (isKeyboardOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isKeyboardOpen]);
+
+  const openKeyboard = () => {
+    setIsKeyboardOpen(true);
+    emailInputRef.current?.blur();
+  };
+
+const getLayout = () => {
+  const numbers = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
+  const letters = isCaps ? 'QWERTYUIOPASDFGHJKLZXCVBNM' : 'qwertyuiopasdfghjkllzxcvbnm';
+  const firstRow = letters.slice(0, 10).split('');
+  const secondRow = letters.slice(10, 19).split('');
+  const thirdRow = letters.slice(19).split('');
+
+  return [numbers, firstRow, secondRow, thirdRow];
+};
+
+
+const handleKeyClick = (key) => {
+  if (key === 'BACKSPACE') {
+    setEmail(prev => prev.slice(0, -1));
+  } else if (key === 'SPACE') {
+    setEmail(prev => prev + ' ');
+  } else if (key === 'CLEAR') {
+    setEmail('');
+  } else if (key === 'ĐÓNG') {
+    setIsKeyboardOpen(false);
+  } else {
+    setEmail(prev => prev + key);
+  }
+};
+
+  // === Tạo QR preview ===
   useEffect(() => {
     const fakeSessionId = 'preview_' + Math.random().toString(36).substr(2, 9);
     const fakeUrl = `${import.meta.env.VITE_API_BASE_URL}/download?session_id=${fakeSessionId}`;
@@ -43,7 +92,7 @@ function Qr() {
       .catch(err => console.error('Lỗi tạo QR preview:', err));
   }, []);
 
-  // === Cập nhật preview ảnh có QR khi bật toggle ===
+  // === Cập nhật ảnh có QR ===
   useEffect(() => {
     if (!finalImage || !previewQr) {
       setFinalImageWithQr(finalImage);
@@ -84,12 +133,10 @@ function Qr() {
 
             ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
             ctx.fillRect(startX - padding, qrY - padding, totalWidth + padding * 2, backgroundHeight);
-
             ctx.fillStyle = '#000';
             ctx.textAlign = 'left';
             ctx.textBaseline = 'middle';
             ctx.fillText(dateStr, startX, qrY + qrSize / 2);
-
             ctx.drawImage(qrImg, startX + textWidth + spacing, qrY, qrSize, qrSize);
             setFinalImageWithQr(canvas.toDataURL('image/jpeg'));
           };
@@ -104,73 +151,7 @@ function Qr() {
     drawQrOnImage();
   }, [showQrOverlay, finalImage, previewQr]);
 
-  // === Các hàm API (giống trước) ===
-
-  const uploadCollection = async (filesToUpload, sessionId, downloadLink) => {
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/media`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          files: filesToUpload,
-          session_id: sessionId,
-          id_admin: id_admin,
-          download_link: downloadLink,
-        }),
-      });
-      if (!response.ok) throw new Error('Upload thất bại');
-    } catch (error) {
-      console.error('Lỗi upload:', error);
-    }
-  };
-
-  const sendQrEmail = async (email, sessionId) => {
-    try {
-      await fetch(`${import.meta.env.VITE_API_BASE_URL}/send-qr-email`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, session_id: sessionId }),
-      });
-      setEmailSent(true);
-    } catch (err) {
-      console.error('Gửi email QR thất bại:', err);
-    }
-  };
-
-  const sendOriginalImagesEmail = async (email, images) => {
-    try {
-      const sessionId = generateSessionId();
-      await fetch(`${import.meta.env.VITE_API_BASE_URL}/send-original-images-email`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, session_id: sessionId, images }),
-      });
-      setEmailSent(true);
-    } catch (err) {
-      console.error('Gửi ảnh gốc thất bại:', err);
-    }
-  };
-
-  const updateIdFrameAndIdQr = async (id, id_frame, id_qr, email = null) => {
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/update-pay`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, id_frame, id_qr, email }),
-      });
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Cập nhật thất bại');
-      }
-      return true;
-    } catch (error) {
-      console.error('Lỗi cập nhật DB:', error);
-      alert('Cập nhật thông tin thất bại: ' + error.message);
-      return false;
-    }
-  };
-
-  // === Xử lý GIF (vẫn cần để upload sau) ===
+  // === Xử lý GIF ===
   const [gifBase64, setGifBase64] = useState(null);
   const [videoConfig, setVideoConfig] = useState({ video: 0 });
   const [isGifReady, setIsGifReady] = useState(false);
@@ -212,6 +193,89 @@ function Qr() {
     loadConfigAndGif();
   }, [photos, id_admin, doNotSaveToWeb]);
 
+  // === API functions ===
+  const uploadCollection = async (filesToUpload, sessionId, downloadLink) => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/media`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          files: filesToUpload,
+          session_id: sessionId,
+          id_admin: id_admin,
+          download_link: downloadLink,
+        }),
+      });
+      if (!response.ok) throw new Error('Upload thất bại');
+    } catch (error) {
+      console.error('Lỗi upload:', error);
+    }
+  };
+
+  const sendQrEmail = async (email, sessionId) => {
+    try {
+      await fetch(`${import.meta.env.VITE_API_BASE_URL}/send-qr-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, session_id: sessionId }),
+      });
+      setEmailSent(true);
+    } catch (err) {
+      console.error('Gửi email QR thất bại:', err);
+    }
+  };
+
+  const sendOriginalImagesEmail = async (email, images) => {
+    const validImages = images.filter(img =>
+      typeof img === 'string' &&
+      img.startsWith('data:image/') &&
+      img.includes(';base64,')
+    );
+
+    if (validImages.length === 0) {
+      console.error('Không có ảnh hợp lệ để gửi');
+      return;
+    }
+
+    try {
+      const sessionId = generateSessionId();
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/send-original-images-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, session_id: sessionId, images: validImages }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Lỗi từ server:', errorData);
+        return;
+      }
+
+      setEmailSent(true);
+    } catch (err) {
+      console.error('Gửi ảnh gốc thất bại:', err);
+    }
+  };
+
+  const updateIdFrameAndIdQr = async (id, id_frame, id_qr, email = null) => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/update-pay`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, id_frame, id_qr, email }),
+      });
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Cập nhật thất bại');
+      }
+      return true;
+    } catch (error) {
+      console.error('Lỗi cập nhật DB:', error);
+      alert('Cập nhật thông tin thất bại: ' + error.message);
+      return false;
+    }
+  };
+
   // === Xử lý khi nhấn "TIẾP TỤC" ===
   const handleContinue = async () => {
     if (isContinuing) return;
@@ -226,13 +290,11 @@ function Qr() {
       let downloadLink = null;
 
       if (!doNotSaveToWeb) {
-        // Tạo session thật và QR thật
         sessionId = generateSessionId();
         downloadLink = `${import.meta.env.VITE_API_BASE_URL}/download?session_id=${sessionId}`;
         qrDataUrl = await QRCode.toDataURL(downloadLink, { width: 256, margin: 2 });
 
         if (showQrOverlay) {
-          // Tái tạo ảnh có QR (dùng QR thật)
           finalImageToSend = await (new Promise((resolve) => {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
@@ -280,7 +342,6 @@ function Qr() {
         }
       }
 
-      // Cập nhật DB (chờ)
       const idQrToSave = doNotSaveToWeb ? null : sessionId;
       const updateSuccess = await updateIdFrameAndIdQr(id_pay, id_frame, idQrToSave, emailTrimmed || null);
       if (!updateSuccess) {
@@ -288,7 +349,6 @@ function Qr() {
         return;
       }
 
-      // Chuyển trang NGAY
       navigate('/choose', {
         state: {
           compositeImage: finalImageToSend,
@@ -298,7 +358,6 @@ function Qr() {
         },
       });
 
-      // Chạy nền
       if (doNotSaveToWeb) {
         if (emailTrimmed) {
           sendOriginalImagesEmail(emailTrimmed, [finalImage, ...photos]);
@@ -335,7 +394,7 @@ function Qr() {
   return (
     <div className="qr-container">
       <div className="countdown">⏳: {formattedCountdown}</div>
-      <h1 className="touch-to-crecuts mau_h1">TẠO MÃ QR ĐỂ TẢI XUỐNG</h1>
+      <h1 className="touch-to-crecuts mau_h1_qr">TẠO MÃ QR ĐỂ TẢI XUỐNG</h1>
 
       <div className="qr-layout box5">
         {/* CỘT TRÁI: Ảnh preview */}
@@ -347,7 +406,7 @@ function Qr() {
               className="preview-image-main"
             />
             {doNotSaveToWeb && (
-              <div className="privacy-note">🔒 Ảnh sẽ không được lưu lên web</div>
+              <div className="privacy-note">🔒 Ảnh sẽ không được lưu trữ</div>
             )}
           </div>
         </div>
@@ -355,13 +414,16 @@ function Qr() {
         {/* CỘT PHẢI: Tùy chọn */}
         <div className="qr-column">
           <div className="privacy-toggle">
-            <label className="privacy-checkbox">
-              <input
-                type="checkbox"
-                checked={doNotSaveToWeb}
-                onChange={(e) => setDoNotSaveToWeb(e.target.checked)}
-              />
-              <span>🔒 Không lưu ảnh lên web</span>
+            <label className="toggle-label">
+              <div className="switch">
+                <input
+                  type="checkbox"
+                  checked={doNotSaveToWeb}
+                  onChange={(e) => setDoNotSaveToWeb(e.target.checked)}
+                />
+                <span className="slider"></span>
+              </div>
+              <span>🔒 Không lưu trữ ảnh</span>
             </label>
           </div>
 
@@ -370,11 +432,14 @@ function Qr() {
               <>
                 <label className="email-label">Nhập email để nhận ảnh:</label>
                 <input
-                  type="email"
+                  ref={emailInputRef}
+                  type="text"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  onFocus={openKeyboard}
                   placeholder="example@gmail.com"
                   className="email-input"
+                  readOnly
                 />
               </>
             ) : (
@@ -384,12 +449,15 @@ function Qr() {
 
           {!doNotSaveToWeb && (
             <div className="qr-toggle-wrapper">
-              <label className="qr-toggle">
-                <input
-                  type="checkbox"
-                  checked={showQrOverlay}
-                  onChange={(e) => setShowQrOverlay(e.target.checked)}
-                />
+              <label className="toggle-label">
+                <div className="switch">
+                  <input
+                    type="checkbox"
+                    checked={showQrOverlay}
+                    onChange={(e) => setShowQrOverlay(e.target.checked)}
+                  />
+                  <span className="slider"></span>
+                </div>
                 <span>In QR lên ảnh</span>
               </label>
             </div>
@@ -417,6 +485,35 @@ function Qr() {
           {isContinuing ? 'ĐANG XỬ LÝ...' : 'TIẾP TỤC'}
         </button>
       </div>
+
+      {/* BÀN PHÍM ẢO — GIỐNG HẾT DOWNLOAD.JSX */}
+      {isKeyboardOpen && (
+        <div className="virtual-keyboard" ref={keyboardRef}>
+          {getLayout().map((row, rowIndex) => (
+            <div key={rowIndex} className="keyboard-row-dl">
+              {row.map((key) => (
+                <button
+                  key={key}
+                  className="key-dl"
+                  onClick={() => handleKeyClick(key)}
+                >
+                  {key}
+                </button>
+              ))}
+            </div>
+          ))}
+          {/* Hàng cuối: Space, Backspace, v.v. */}
+          <div className="keyboard-row-dl">
+            <button className="key-dl wide" onClick={() => handleKeyClick('ĐÓNG')}>Đóng</button>
+            <button className="key-dl" onClick={() => handleKeyClick('@')}>@</button>
+            <button className="key-dl" onClick={() => handleKeyClick('.')}>.</button>
+            <button className="key-dl wide" onClick={() => handleKeyClick('SPACE')}>Space</button>
+            <button className="key-dl" onClick={() => handleKeyClick('BACKSPACE')}>⌫</button>
+          </div>
+        </div>
+      )}
+
+      <Chatbot />
     </div>
   );
 }

@@ -593,11 +593,11 @@ const FrameAD = () => {
         <div className={`setting2-container ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
           {/* HEADER, CONTROLS, TABLE, PAGINATION */}
           <div className="setting2-header">
-            <h2 className="setting2-title">Quản lý khung ảnh</h2>
+            <h2 className="setting2-title">THIẾT LẬP KHUNG ẢNH</h2>
           </div>
 
           <div className="setting2-controls">
-            <button className="btn-pink" onClick={openAddModal}>+ Thêm khung mới</button>
+            <button className="btn-pink" onClick={openAddModal}><i className="bi bi-plus-lg"></i> Thêm khung mới</button>
             <button className="btn-pink" onClick={() => selectedFrame && openCameraTest(selectedFrame)} disabled={!selectedFrame}>
               Chụp thử
             </button>
@@ -632,11 +632,11 @@ const FrameAD = () => {
               <thead>
                 <tr>
                   <th>STT</th>
-                  <th>Khung ảnh</th>
-                  <th>Chủ đề</th>
-                  <th>Loại cut</th>
-                  <th>Kiểu khung</th>
-                  <th>Hành động</th>
+                  <th>KHUNG ẢNH</th>
+                  <th>CHỦ ĐỀ</th>
+                  <th>LOẠI CUT</th>
+                  <th>KIỂU KHUNG</th>
+                  <th>HÀNH ĐỘNG</th>
                 </tr>
               </thead>
               <tbody>

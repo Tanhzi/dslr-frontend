@@ -1,0 +1,696 @@
+/* Container chính - nền gradient hồng pastel */
+.container-fluid {
+  background: linear-gradient(-45deg, #fdf2f8, #fce7f3, #fae8ed, #fdf2f8);
+  background-size: 400% 400%;
+  animation: gradientShift 15s ease infinite;
+}
+
+/* ======== Slot và ảnh ======== */
+.slot-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 8px;
+}
+
+.slot {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background-color: white;
+  position: relative;
+  border: 2px solid #fbcfe8;
+  border-radius: 12px !important;
+}
+
+.slot:hover {
+  transform: scale(1.03);
+  box-shadow: 0 8px 25px rgba(244, 114, 182, 0.15);
+  border-color: #f9a8d4;
+}
+
+.slot.selected {
+  border-color: #ec4899 !important;
+  box-shadow: 0 0 0 4px rgba(236, 72, 153, 0.25);
+  transform: scale(1.02);
+  animation: selectPulse 1.5s infinite;
+}
+
+.placeholder-slot {
+  border: 2px dashed #fda4af !important;
+  background: linear-gradient(145deg, #fdf2f8, #fce7f3) !important;
+  transition: all 0.3s ease;
+  color: #ec4899;
+  border-radius: 12px !important;
+}
+
+.placeholder-slot:hover {
+  border-color: #ec4899 !important;
+  background: linear-gradient(145deg, #fff0f6, #fce7f3) !important;
+  color: #be185d !important;
+}
+
+/* ======== Phần xem trước ảnh đã chọn ======== */
+.selected-image-preview {
+  border: 3px solid #ec4899;
+  border-radius: 12px;
+  padding: 15px;
+  background: linear-gradient(145deg, #ffffff, #fdf2f8);
+  box-shadow: 0 4px 20px rgba(236, 72, 153, 0.15);
+  transition: all 0.3s ease;
+  margin-bottom: 24px;
+}
+
+.selected-image-preview:hover {
+  box-shadow: 0 6px 25px rgba(236, 72, 153, 0.2);
+}
+
+/* ======== Bộ lọc - vùng chính ======== */
+.filters-container {
+  contain: layout style paint;
+  padding: 0 5px;
+}
+
+/* ======== Nút filter ======== */
+.filters-container .btn {
+  background: linear-gradient(135deg, #fdf2f8, #fce7f3);
+  border: 2px solid #f9a8d4;
+  color: #be185d;
+  font-weight: 500;
+  border-radius: 8px;
+  transition: all 0.25s ease;
+  box-shadow: 0 2px 6px rgba(236, 72, 153, 0.1);
+  padding: 8px 5px;
+  font-size: 12px;
+  height: 36px;
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  position: relative;
+}
+
+/* Hiệu ứng ánh sáng lướt qua */
+.filters-container .btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.5s;
+  border-radius: 8px;
+}
+
+.filters-container .btn:hover::before {
+  left: 100%;
+}
+
+/* Hover - DÙNG SCALE THAY VÌ TRANSLATE */
+.filters-container .btn:hover {
+  background: linear-gradient(135deg, #fbcfe8, #f9a8d4);
+  border-color: #ec4899;
+  color: white;
+  transform: scale(1.02);
+  box-shadow: 0 4px 12px rgba(236, 72, 153, 0.2);
+}
+
+/* Khi active */
+.filters-container .btn-primary {
+  background: linear-gradient(135deg, #ec4899, #be185d) !important;
+  border-color: #be185d !important;
+  color: white !important;
+  box-shadow: 0 4px 12px rgba(190, 24, 93, 0.3) !important;
+}
+
+/* Khi nhấn */
+.filters-container .btn:active {
+  transform: scale(0.98);
+  box-shadow: 0 2px 4px rgba(236, 72, 153, 0.2);
+}
+
+/* Đảm bảo hàng filter không bị tràn */
+.filters-container .d-flex {
+  gap: 10px;
+}
+
+.filters-container .d-flex > div {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ======== Nút tiếp tục ======== */
+.btn-success {
+  background: linear-gradient(135deg, #ec4899, #be185d);
+  border: none;
+  font-weight: 600;
+  position: relative;
+  overflow: hidden;
+  color: white;
+  padding: 15px;
+  font-size: 18px;
+  border-radius: 10px !important;
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+}
+
+.btn-success::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.btn-success:hover::before {
+  left: 100%;
+}
+
+.btn-success:hover {
+  background: linear-gradient(135deg, #be185d, #9d174d);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(157, 23, 77, 0.4);
+}
+
+/* ======== Nút điều khiển trên ảnh (chụp lại, lật, reset) ======== */
+.slot .btn {
+  backdrop-filter: blur(10px);
+  background-color: rgba(253, 242, 248, 0.9) !important;
+  border: 1px solid rgba(251, 207, 232, 0.5);
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 4px rgba(236, 72, 153, 0.1);
+  border-radius: 50% !important;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.slot .btn:hover {
+  background-color: rgba(251, 207, 232, 1) !important;
+  transform: scale(1.1);
+  box-shadow: 0 3px 8px rgba(236, 72, 153, 0.2);
+}
+
+.slot .btn-warning {
+  background-color: rgba(254, 202, 202, 0.9) !important;
+  color: #be123c !important;
+  border-color: rgba(254, 202, 202, 0.5);
+}
+
+.slot .btn-info {
+  background-color: rgba(250, 232, 253, 0.9) !important;
+  color: #9d174d !important;
+  border-color: rgba(250, 232, 253, 0.5);
+}
+
+.slot .btn-secondary {
+  background-color: rgba(251, 207, 232, 0.8) !important;
+  color: #be185d !important;
+  border-color: rgba(251, 207, 232, 0.5);
+}
+
+/* ======== Scrollbar ======== */
+.filters-container::-webkit-scrollbar,
+.filters-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.filters-container::-webkit-scrollbar-track,
+.filters-list::-webkit-scrollbar-track {
+  background: #fdf2f8;
+  border-radius: 4px;
+}
+
+.filters-container::-webkit-scrollbar-thumb,
+.filters-list::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #ec4899, #f9a8d4);
+  border-radius: 4px;
+}
+
+.filters-container::-webkit-scrollbar-thumb:hover,
+.filters-list::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #be185d, #ec4899);
+}
+
+/* ======== Typography ======== */
+h4 {
+  color: #be185d !important;
+  font-weight: 600;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+/* ======== Compare Slider ======== */
+.compare-slider-container {
+  position: relative;
+  width: 100%;
+  max-height: 220px;
+  overflow: hidden;
+  border-radius: 8px;
+  cursor: ew-resize;
+  user-select: none;
+}
+
+.compare-slider-divider {
+  position: absolute;
+  top: 0;
+  width: 4px;
+  height: 100%;
+  background-color: #fff;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+  cursor: ew-resize;
+  z-index: 10;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.compare-slider-handle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 40px;
+  height: 40px;
+  background-color: #fff;
+  border: 3px solid #ec4899;
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+  cursor: ew-resize;
+}
+
+.compare-slider-arrows {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+}
+
+.compare-slider-arrow-left {
+  width: 0;
+  height: 0;
+  border-top: 6px solid transparent;
+  border-bottom: 6px solid transparent;
+  border-right: 8px solid #ec4899;
+}
+
+.compare-slider-arrow-right {
+  width: 0;
+  height: 0;
+  border-top: 6px solid transparent;
+  border-bottom: 6px solid transparent;
+  border-left: 8px solid #ec4899;
+}
+
+.compare-label {
+  position: absolute;
+  top: 10px;
+  background-color: rgba(0, 0, 0, 0.6);
+  color: white;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: bold;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.compare-label-original {
+  left: 10px;
+}
+
+.compare-label-enhanced {
+  right: 10px;
+  background-color: #ec4899;
+}
+
+/* ======== Responsive ======== */
+@media (max-width: 768px) {
+  .row {
+    flex-direction: column;
+  }
+
+  .col-md-7,
+  .col-md-5 {
+    width: 100% !important;
+    flex: none !important;
+    height: auto !important;
+  }
+
+  .selected-image-preview {
+    margin-bottom: 20px;
+  }
+
+  .selected-image-preview img {
+    max-height: 180px !important;
+  }
+
+  .filters-container .btn {
+    padding: 6px 4px !important;
+    font-size: 11px !important;
+    height: auto !important;
+  }
+}
+
+/* ======== Animations ======== */
+@keyframes selectPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(236, 72, 153, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(236, 72, 153, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(236, 72, 153, 0);
+  }
+}
+
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* ======== Hiệu ứng ánh sáng chung ======== */
+.slot-container:hover .slot:not(:hover) {
+  filter: brightness(0.98);
+}
+
+/* ======== Countdown ======== */
+.countdown-timer {
+  font-size: 48px;
+  font-weight: 700;
+  color: #ec4899;
+  text-shadow: 0 0 10px rgba(236, 72, 153, 0.7);
+  animation: pulseGlow 1.5s infinite;
+}
+
+/* =============== STICKER SECTION =============== */
+.sticker-section {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  margin-top: 20px;
+  max-height: 450px;
+  display: flex;
+  flex-direction: column;
+}
+
+.sticker-header {
+  margin-bottom: 15px;
+}
+
+.sticker-header h4 {
+  color: #ec4899;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+/* Dropdown filter sticker type */
+.sticker-type-filter {
+  position: relative;
+  margin-bottom: 15px;
+}
+
+.sticker-filter-toggle {
+  width: 100%;
+  padding: 10px 15px;
+  background: white;
+  border: 2px solid #fda4af;
+  border-radius: 8px;
+  color: #ec4899;
+  font-weight: 500;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.sticker-filter-toggle:hover {
+  background: #fef2f2;
+  border-color: #ec4899;
+}
+
+.dropdown-arrow {
+  font-size: 12px;
+  transition: transform 0.3s ease;
+  color: #ec4899;
+}
+
+.dropdown-arrow.open {
+  transform: rotate(180deg);
+}
+
+.sticker-type-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 2px solid #fda4af;
+  border-radius: 8px;
+  margin-top: 5px;
+  z-index: 1000;
+  max-height: 250px;
+  overflow-y: auto;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.sticker-type-dropdown button {
+  width: 100%;
+  padding: 12px 15px;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  color: #666;
+  transition: all 0.2s ease;
+  font-weight: 500;
+}
+
+.sticker-type-dropdown button:hover {
+  background: #fef2f2;
+  color: #ec4899;
+}
+
+.sticker-type-dropdown button.active {
+  background: #fda4af;
+  color: white;
+  font-weight: 600;
+}
+
+.sticker-type-dropdown::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sticker-type-dropdown::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.sticker-type-dropdown::-webkit-scrollbar-thumb {
+  background: #fda4af;
+  border-radius: 10px;
+}
+
+/* Grid stickers */
+.sticker-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  overflow-y: auto;
+  max-height: 280px;
+  padding: 5px;
+}
+
+.sticker-grid::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sticker-grid::-webkit-scrollbar-track {
+  background: #f8f9fa;
+  border-radius: 10px;
+}
+
+.sticker-grid::-webkit-scrollbar-thumb {
+  background: #fda4af;
+  border-radius: 10px;
+}
+
+.sticker-grid::-webkit-scrollbar-thumb:hover {
+  background: #ec4899;
+}
+
+.sticker-item {
+  background: white;
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.sticker-item:hover {
+  border-color: #fda4af;
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px rgba(253, 164, 175, 0.3);
+}
+
+.sticker-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+/* =============== PLACED STICKERS (chỉ trên preview) =============== */
+.placed-sticker {
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+  animation: stickerPop 0.3s ease;
+}
+
+.placed-sticker.selected {
+  outline: 2px solid #ec4899;
+  outline-offset: 4px;
+}
+
+/* Controls: 4 góc, không có background trắng */
+.sticker-controls {
+  position: absolute;
+  inset: -8px;                 /* cách sticker 8px */
+  pointer-events: none;        /* không che mất drag */
+  z-index: 10;
+}
+
+.sticker-control-btn {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  background: #ec4899;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  font-size: 14px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  pointer-events: auto;        /* cho phép click */
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  transition: all 0.2s ease;
+}
+
+.sticker-control-btn:hover {
+  background: #be185d;
+  transform: scale(1.15);
+}
+
+/* Vị trí 4 góc */
+.sticker-control-btn.zoom-in    { top: 0; left: 0; }
+.sticker-control-btn.zoom-out   { top: 0; right: 0; }
+.sticker-control-btn.rotate-cw  { bottom: 0; right: 0; }
+.sticker-control-btn.rotate-ccw { bottom: 0; left: 0; }
+.sticker-control-btn.delete     { 
+  top: 50%; 
+  left: 50%; 
+  transform: translate(-50%, -50%);
+  background: #ef4444;
+  font-size: 16px;
+}
+.sticker-control-btn.delete:hover { background: #dc2626; }
+/* =============== RESPONSIVE =============== */
+@media (max-width: 768px) {
+  .sticker-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+
+  .sticker-section {
+    max-height: 350px;
+  }
+
+  .sticker-controls {
+    top: -40px;
+    padding: 4px 6px;
+    gap: 4px;
+  }
+
+  .sticker-control-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 576px) {
+  .sticker-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+
+  .placed-sticker img {
+    width: 60px !important;
+    height: 60px !important;
+  }
+}
+
+/* =============== ANIMATIONS =============== */
+@keyframes stickerPop {
+  0% {
+    transform: translate(-50%, -50%) scale(0);
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.2);
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.placed-sticker {
+  animation: stickerPop 0.3s ease;
+}
+
+/* Loading spinner */
+.spinner-border {
+  width: 2rem;
+  height: 2rem;
+  border: 0.25em solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spinner-border 0.75s linear infinite;
+}
+
+@keyframes spinner-border {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* //file css chạy hiện tại */

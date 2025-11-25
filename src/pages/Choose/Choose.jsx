@@ -116,13 +116,19 @@ const Choose = () => {
           )}
         </div>
       )}
-      <div className="choose-image-row text-center">
-        <img src={compositeImage} alt="Ảnh chính" className="choose-left" />
-        <div className="choose-middle mx-5">
-          <img src={qrImage} alt="QR Code cho ảnh" />
-          <div className="qr-label">QR Code Ảnh</div>
-        </div>
+<div className="choose-image-row text-center">
+  {qrImage ? (
+    <>
+      <img src={compositeImage} alt="Ảnh chính" className="choose-left" />
+      <div className="choose-middle mx-5">
+        <img src={qrImage} alt="QR Code cho ảnh" />
+        <div className="qr-label">QR Code Ảnh</div>
       </div>
+    </>
+  ) : (
+    <img src={compositeImage} alt="Ảnh chính" className="choose-centered" />
+  )}
+</div>
       <div className="d-flex justify-content-center">
         <button className="continue-btn" onClick={handleFinish}>Đánh Giá</button>
       </div>

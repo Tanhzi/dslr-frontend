@@ -150,7 +150,7 @@ return (
 
     <div className={`appadmin-main-container ${sidebarCollapsed ? 'appadmin-sidebar-collapsed' : ''}`}>
       <div className="appadmin-title">
-        <h2 className="appadmin-overview-title">Tổng quan</h2>
+        <h2 className="appadmin-overview-title">TỔNG QUAN</h2>
       </div>
 
       <div className="appadmin-stats-row">

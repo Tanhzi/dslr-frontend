@@ -1,18 +1,21 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import Chatbot from '../../components/Chatbot';
 import './SelPhoto.css';
 import { useCountdown } from "../../contexts/CountdownContext";
+import FilterSection from './components/FilterSection';
+import StickerSection from './components/StickerSection';
+import ImagePreview from './components/ImagePreview';
+import Chatbot from '../../components/Chatbot';
 
 const SelPhoto = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const { photos, cut, frameType, size, selectedFrameId, selectedFrame } = location.state || { 
-    photos: [], 
-    cut: '3', 
-    frameType: 'default', 
-    size: 'default' 
+  const { photos, cut, frameType, size, selectedFrameId, selectedFrame } = location.state || {
+    photos: [],
+    cut: '3',
+    frameType: 'default',
+    size: 'default'
   };
 
   // State cho các bộ lọc
@@ -38,15 +41,25 @@ const SelPhoto = () => {
   const [selectedSlots, setSelectedSlots] = useState(getInitialSlots());
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [appliedFilters, setAppliedFilters] = useState({});
-  const [autoTriggered, setAutoTriggered] = useState(false);
   const [allSlotsFilled, setAllSlotsFilled] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // State cho compare slider
+  // State cho original images (để compare)
   const [originalImages, setOriginalImages] = useState({});
-  const [sliderPosition, setSliderPosition] = useState(50);
-  const [isDragging, setIsDragging] = useState(false);
-  const sliderRef = useRef(null);
+
+  // State cho stickers
+  const [allStickers, setAllStickers] = useState([]);
+  const [filteredStickers, setFilteredStickers] = useState([]);
+  const [stickerTypes, setStickerTypes] = useState([]);
+  const [selectedStickerType, setSelectedStickerType] = useState('all');
+  const [showStickerTypeDropdown, setShowStickerTypeDropdown] = useState(false);
+  const [loadingStickers, setLoadingStickers] = useState(true);
+
+  // State cho stickers trên preview image (MỖI ẢNH CÓ STICKERS RIÊNG)
+  const [imageStickers, setImageStickers] = useState({});
+  const [selectedPreviewStickerId, setSelectedPreviewStickerId] = useState(null);
+
+  const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
   // Tự động điền ảnh vào slots khi component mount
   useEffect(() => {
@@ -75,8 +88,98 @@ const SelPhoto = () => {
         }
       });
       setOriginalImages(initialOriginals);
+
+      // Khởi tạo imageStickers cho mỗi ảnh
+      const initialImageStickers = {};
+      filledSlots.forEach((slot, index) => {
+        if (slot) {
+          initialImageStickers[index] = [];
+        }
+      });
+      setImageStickers(initialImageStickers);
     }
   }, [photos, cut]);
+
+  // Fetch stickers từ API với proper error handling
+  useEffect(() => {
+    const fetchStickers = async () => {
+      try {
+        setLoadingStickers(true);
+        
+        const authStr = localStorage.getItem('auth');
+        console.log('[DEBUG] Auth from localStorage:', authStr);
+        
+        if (!authStr) {
+          console.error('[ERROR] Không tìm thấy auth trong localStorage');
+          setLoadingStickers(false);
+          return;
+        }
+
+        let auth;
+        try {
+          auth = JSON.parse(authStr);
+        } catch (e) {
+          console.error('[ERROR] Parse auth JSON thất bại');
+          setLoadingStickers(false);
+          return;
+        }
+
+        const id_admin = auth.id_admin;
+        
+        if (!id_admin) {
+          console.error('[ERROR] Không tìm thấy id_admin trong auth');
+          setLoadingStickers(false);
+          return;
+        }
+
+        console.log('[DEBUG] Using id_admin:', id_admin);
+
+        const url = `${API_URL}/stickers?id_admin=${id_admin}&limit=1000`;
+        console.log('[DEBUG] Fetching stickers from:', url);
+        
+        const response = await fetch(url);
+        console.log('[DEBUG] Response status:', response.status);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log('[DEBUG] Response data:', data);
+        
+        if (data.status === 'success') {
+          console.log('[SUCCESS] Loaded', data.data?.length || 0, 'stickers');
+          setAllStickers(data.data || []);
+          setFilteredStickers(data.data || []);
+          
+          const types = [...new Set((data.data || []).map(s => s.type).filter(Boolean))];
+          console.log('[DEBUG] Sticker types:', types);
+          setStickerTypes(types.length > 0 ? types : []);
+        } else {
+          console.error('[ERROR] API returned error:', data.message || 'Unknown');
+          setAllStickers([]);
+          setFilteredStickers([]);
+        }
+      } catch (error) {
+        console.error('[ERROR] Lỗi tải stickers:', error);
+        setAllStickers([]);
+        setFilteredStickers([]);
+      } finally {
+        setLoadingStickers(false);
+      }
+    };
+
+    fetchStickers();
+  }, []);
+
+  // Lọc stickers theo loại
+  useEffect(() => {
+    if (selectedStickerType === 'all') {
+      setFilteredStickers(allStickers);
+    } else {
+      setFilteredStickers(allStickers.filter(s => s.type === selectedStickerType));
+    }
+  }, [selectedStickerType, allStickers]);
 
   // Hàm load ảnh (hỗ trợ crossOrigin)
   const loadImage = (src) => {
@@ -89,23 +192,20 @@ const SelPhoto = () => {
     });
   };
 
-  // Hàm tạo ảnh tổng hợp (composite image)
+  // Hàm tạo ảnh tổng hợp (composite image) - THÊM STICKERS
   const generateCompositeImage = async (images, cutValue) => {
     let compositeWidth, compositeHeight, positions, imageWidth, imageHeight;
 
     if (cutValue === '42') {
       compositeWidth = 600;
       compositeHeight = 900;
-
       const paddingLeft = 5;
       const paddingTop = 30;
       const paddingRight = 5;
       const paddingBottom = 120;
       const gap = 1;
-
       imageWidth = (compositeWidth - paddingLeft - paddingRight - gap) / 2;
       imageHeight = (compositeHeight - paddingTop - paddingBottom - gap) / 2;
-
       positions = [
         { x: paddingLeft, y: paddingTop },
         { x: paddingLeft + imageWidth + gap, y: paddingTop },
@@ -117,16 +217,13 @@ const SelPhoto = () => {
     else if (cutValue === '41') {
       compositeWidth = 300;
       compositeHeight = 900;
-
       const paddingLeft = 12;
       const paddingTop = 25;
       const paddingRight = 12;
       const paddingBottom = 90;
       const gap = 10;
-
       imageWidth = compositeWidth - paddingLeft - paddingRight;
       imageHeight = (compositeHeight - paddingTop - paddingBottom - 3 * gap) / 4;
-
       positions = [];
       for (let i = 0; i < 4; i++) {
         positions.push({ x: paddingLeft, y: paddingTop + i * (imageHeight + gap) });
@@ -136,16 +233,13 @@ const SelPhoto = () => {
     else if (cutValue === '3') {
       compositeWidth = 900;
       compositeHeight = 300;
-
       const paddingLeft = 25;
       const paddingTop = 40;
       const paddingRight = 25;
       const paddingBottom = 40;
       const gap = 11;
-
       imageWidth = 276;
       imageHeight = 220;
-
       positions = [
         { x: paddingLeft, y: paddingTop },
         { x: paddingLeft + imageWidth + gap, y: paddingTop },
@@ -156,16 +250,13 @@ const SelPhoto = () => {
     else if (cutValue === '6') {
       compositeWidth = 600;
       compositeHeight = 900;
-
       const paddingLeft = 10;
       const paddingRight = 20;
       const paddingTop = 24;
       const paddingBottom = 120;
       const gap = 1;
-
       imageWidth = (compositeWidth - paddingLeft - paddingRight - gap) / 2;
       imageHeight = (compositeHeight - paddingTop - paddingBottom - 2 * gap) / 3;
-
       positions = [];
       for (let row = 0; row < 3; row++) {
         for (let col = 0; col < 2; col++) {
@@ -202,6 +293,7 @@ const SelPhoto = () => {
 
     const loadedImages = await Promise.all(images.map(item => loadImage(item.photo)));
 
+    // Vẽ ảnh + filter
     images.forEach((item, idx) => {
       const pos = positions[idx];
       const img = loadedImages[idx];
@@ -221,6 +313,46 @@ const SelPhoto = () => {
 
       ctx.filter = 'none';
     });
+
+    // VẼ STICKERS LÊN TỪNG ẢNH - CHỈ VẼ STICKER HỢP LỆ TRONG VÙNG ẢNH
+    for (let idx = 0; idx < images.length; idx++) {
+      const pos = positions[idx];
+      const stickers = imageStickers[idx] || [];
+
+      for (const sticker of stickers) {
+        // Chỉ vẽ sticker nếu nó nằm trong vùng ảnh hợp lệ (5-95%)
+        if (sticker.x >= 5 && sticker.x <= 95 && sticker.y >= 5 && sticker.y <= 95) {
+          try {
+            const stickerImg = await loadImage(sticker.src);
+            
+            ctx.save();
+            
+            // Tính toán vị trí thực tế trên canvas
+            const stickerX = pos.x + (sticker.x / 100) * imageWidth;
+            const stickerY = pos.y + (sticker.y / 100) * imageHeight;
+            
+            ctx.translate(stickerX, stickerY);
+            ctx.rotate((sticker.rotation * Math.PI) / 180);
+            ctx.scale(sticker.scale, sticker.scale);
+            
+            const stickerSize = 60; // Kích thước sticker cơ bản
+            ctx.drawImage(
+              stickerImg,
+              -stickerSize / 2,
+              -stickerSize / 2,
+              stickerSize,
+              stickerSize
+            );
+            
+            ctx.restore();
+          } catch (error) {
+            console.error('[ERROR] Failed to load sticker:', sticker.src, error);
+          }
+        } else {
+          console.log('[WARNING] Sticker outside valid area, skipping:', sticker);
+        }
+      }
+    }
 
     return canvas.toDataURL('image/png');
   };
@@ -246,7 +378,7 @@ const SelPhoto = () => {
 
     try {
       const compositeImage = await generateCompositeImage(finalSlots, cut);
-      navigate('/frame', {
+      navigate('/Frame', {
         state: {
           photos,
           compositeImage,
@@ -255,7 +387,8 @@ const SelPhoto = () => {
           cut,
           selectedSlots: finalSlots,
           selectedFrameId: selectedFrameId,
-          selectedFrame: selectedFrame
+          selectedFrame: selectedFrame,
+          imageStickers: imageStickers // TRUYỀN STICKERS THEO TỪNG ẢNH
         }
       });
     } catch (error) {
@@ -264,14 +397,42 @@ const SelPhoto = () => {
   };
 
   const handleContinue = () => {
-    navigateToFrame();
+    // Validate tất cả stickers trước khi tiếp tục
+    const cleanedStickers = {};
+    Object.keys(imageStickers).forEach(imgIndex => {
+      const stickers = imageStickers[imgIndex] || [];
+      cleanedStickers[imgIndex] = stickers.filter(s => 
+        s.x >= 5 && s.x <= 95 && s.y >= 5 && s.y <= 95
+      );
+    });
+    
+    // Cập nhật state với stickers đã clean
+    setImageStickers(cleanedStickers);
+    
+    // Đợi một chút để state cập nhật
+    setTimeout(() => {
+      navigateToFrame();
+    }, 100);
   };
 
   useEffect(() => {
     if (countdown === 0) {
-      navigateToFrame();
+      // Validate tất cả stickers trước khi auto navigate
+      const cleanedStickers = {};
+      Object.keys(imageStickers).forEach(imgIndex => {
+        const stickers = imageStickers[imgIndex] || [];
+        cleanedStickers[imgIndex] = stickers.filter(s => 
+          s.x >= 5 && s.x <= 95 && s.y >= 5 && s.y <= 95
+        );
+      });
+      
+      setImageStickers(cleanedStickers);
+      
+      setTimeout(() => {
+        navigateToFrame();
+      }, 100);
     }
-  }, [countdown, navigate, selectedSlots, photos, cut, frameType, size]);
+  }, [countdown]);
 
   useEffect(() => {
     const areAllSlotsFilled = selectedSlots.every(slot => slot !== null);
@@ -376,15 +537,13 @@ const SelPhoto = () => {
         }
 
         const updated = [...selectedSlots];
-        updated[index] = { 
-          ...updated[index], 
+        updated[index] = {
+          ...updated[index],
           photo: data.enhanced_image
         };
         setSelectedSlots(updated);
         
         setAppliedFilters(prev => ({ ...prev, [index]: 'original' }));
-        
-        setSliderPosition(50);
         
         console.log('[SUCCESS] Image enhanced successfully');
         alert('✅ Ảnh đã được làm nét!');
@@ -401,76 +560,293 @@ const SelPhoto = () => {
     }
   };
 
-  // Xử lý kéo slider
-  const handleSliderMouseDown = (e) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
-
-  const handleSliderMouseMove = (e) => {
-    if (!isDragging || !sliderRef.current) return;
-
-    const rect = sliderRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const percentage = Math.max(0, Math.min(100, (x / rect.width) * 100));
-    setSliderPosition(percentage);
-  };
-
-  const handleSliderMouseUp = () => {
-    setIsDragging(false);
-  };
-
-  const handleSliderTouchStart = (e) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
-
-  const handleSliderTouchMove = (e) => {
-    if (!isDragging || !sliderRef.current) return;
-
-    const touch = e.touches[0];
-    const rect = sliderRef.current.getBoundingClientRect();
-    const x = touch.clientX - rect.left;
-    const percentage = Math.max(0, Math.min(100, (x / rect.width) * 100));
-    setSliderPosition(percentage);
-  };
-
-  const handleSliderTouchEnd = () => {
-    setIsDragging(false);
-  };
-
-  useEffect(() => {
-    if (isDragging) {
-      document.addEventListener('mousemove', handleSliderMouseMove);
-      document.addEventListener('mouseup', handleSliderMouseUp);
-      document.addEventListener('touchmove', handleSliderTouchMove);
-      document.addEventListener('touchend', handleSliderTouchEnd);
-    } else {
-      document.removeEventListener('mousemove', handleSliderMouseMove);
-      document.removeEventListener('mouseup', handleSliderMouseUp);
-      document.removeEventListener('touchmove', handleSliderTouchMove);
-      document.removeEventListener('touchend', handleSliderTouchEnd);
+  // THÊM STICKER VÀO ẢNH HIỆN TẠI - ĐẶT Ở GIỮA ẢNH + VALIDATE STICKER CŨ
+  const handleAddStickerToPreview = (sticker) => {
+    // Validate sticker cũ trước khi thêm sticker mới
+    if (selectedPreviewStickerId) {
+      validateAndCleanSticker(selectedPreviewStickerId);
     }
-
-    return () => {
-      document.removeEventListener('mousemove', handleSliderMouseMove);
-      document.removeEventListener('mouseup', handleSliderMouseUp);
-      document.removeEventListener('touchmove', handleSliderTouchMove);
-      document.removeEventListener('touchend', handleSliderTouchEnd);
+    
+    const newSticker = {
+      id: Date.now() + Math.random(),
+      src: sticker.sticker,
+      x: 50, // Đặt ở giữa ảnh
+      y: 50, // Đặt ở giữa ảnh
+      scale: 1,
+      rotation: 0
     };
-  }, [isDragging]);
+    
+    setImageStickers(prev => ({
+      ...prev,
+      [selectedImageIndex]: [...(prev[selectedImageIndex] || []), newSticker]
+    }));
+    
+    setSelectedPreviewStickerId(newSticker.id);
+  };
 
-  const getOriginalDimensions = (cutValue) => {
-    if (cutValue === '41') {
-      return { width: 276, height: 195 };
-    } else if (cutValue === '42') {
-      return { width: 260, height: 330 };
-    } else if (cutValue === '6') {
-      return { width: 280, height: 240 };
-    } else if (cutValue === '3') {
-      return { width: 276, height: 220 };
+  const handleStickerClick = (sticker) => {
+    // Validate và xóa tất cả stickers không hợp lệ trước khi thêm mới
+    const currentStickers = imageStickers[selectedImageIndex] || [];
+    const validStickers = currentStickers.filter(s => 
+      s.x >= 5 && s.x <= 95 && s.y >= 5 && s.y <= 95
+    );
+    
+    if (validStickers.length < currentStickers.length) {
+      console.log('[INFO] Removing', currentStickers.length - validStickers.length, 'invalid stickers before adding new one');
+      setImageStickers(prev => ({
+        ...prev,
+        [selectedImageIndex]: validStickers
+      }));
     }
-    return { width: 270, height: 370 };
+    
+    // Sau đó mới thêm sticker mới
+    setTimeout(() => {
+      handleAddStickerToPreview(sticker);
+    }, 50);
+  };
+
+  // XỬ LÝ DI CHUYỂN STICKER - VALIDATE REAL-TIME, XÓA NGAY KHI RA NGOÀI
+  const handlePreviewStickerDragStart = (e, stickerId) => {
+    e.preventDefault();
+    
+    const previewContainer = e.currentTarget.closest('.selected-image-preview');
+    if (!previewContainer) return;
+    
+    // Tìm ảnh trong preview container
+    let imageElement = previewContainer.querySelector('img[alt="Preview"]');
+    if (!imageElement) {
+      imageElement = previewContainer.querySelector('img[alt="Enhanced"]');
+    }
+    if (!imageElement) {
+      imageElement = previewContainer.querySelector('img');
+    }
+    if (!imageElement) return;
+    
+    const imageRect = imageElement.getBoundingClientRect();
+    
+    const sticker = (imageStickers[selectedImageIndex] || []).find(s => s.id === stickerId);
+    if (!sticker) return;
+    
+    // Lưu vùng ảnh hợp lệ với margin 5%
+    const margin = 0.05; // 5%
+    const validImageRect = {
+      left: imageRect.left + (imageRect.width * margin),
+      right: imageRect.right - (imageRect.width * margin),
+      top: imageRect.top + (imageRect.height * margin),
+      bottom: imageRect.bottom - (imageRect.height * margin),
+      width: imageRect.width * (1 - 2 * margin),
+      height: imageRect.height * (1 - 2 * margin),
+      originalLeft: imageRect.left,
+      originalTop: imageRect.top,
+      originalWidth: imageRect.width,
+      originalHeight: imageRect.height
+    };
+
+    let lastValidX = sticker.x;
+    let lastValidY = sticker.y;
+    let isOutside = false;
+
+    const handleMove = (moveEvent) => {
+      const currentX = moveEvent.type.includes('mouse') ? moveEvent.clientX : moveEvent.touches[0].clientX;
+      const currentY = moveEvent.type.includes('mouse') ? moveEvent.clientY : moveEvent.touches[0].clientY;
+      
+      // Kiểm tra xem con trỏ có nằm trong vùng hợp lệ không (5-95%)
+      const isInsideValidArea = currentX >= validImageRect.left && 
+                                currentX <= validImageRect.right && 
+                                currentY >= validImageRect.top && 
+                                currentY <= validImageRect.bottom;
+      
+      if (isInsideValidArea) {
+        isOutside = false;
+        
+        // Tính toán vị trí tương đối so với toàn bộ ảnh
+        const relativeX = currentX - validImageRect.originalLeft;
+        const relativeY = currentY - validImageRect.originalTop;
+        
+        // Chuyển đổi sang phần trăm
+        const percentX = (relativeX / validImageRect.originalWidth) * 100;
+        const percentY = (relativeY / validImageRect.originalHeight) * 100;
+        
+        // Giới hạn trong khoảng 5-95%
+        const clampedX = Math.max(5, Math.min(95, percentX));
+        const clampedY = Math.max(5, Math.min(95, percentY));
+
+        lastValidX = clampedX;
+        lastValidY = clampedY;
+
+        setImageStickers(prev => ({
+          ...prev,
+          [selectedImageIndex]: (prev[selectedImageIndex] || []).map(s =>
+            s.id === stickerId
+              ? { ...s, x: clampedX, y: clampedY }
+              : s
+          )
+        }));
+      } else {
+        // Nếu ra ngoài vùng hợp lệ, đánh dấu là outside
+        isOutside = true;
+      }
+    };
+
+    const handleEnd = (endEvent) => {
+      // Kiểm tra vị trí cuối cùng
+      if (isOutside) {
+        // XÓA NGAY nếu thả ngoài vùng hợp lệ
+        console.log('[INFO] Sticker dragged outside valid area - removing immediately');
+        setImageStickers(prev => ({
+          ...prev,
+          [selectedImageIndex]: (prev[selectedImageIndex] || []).filter(s => s.id !== stickerId)
+        }));
+        setSelectedPreviewStickerId(null);
+      } else {
+        // Validate vị trí cuối cùng
+        const finalSticker = (imageStickers[selectedImageIndex] || []).find(s => s.id === stickerId);
+        if (finalSticker) {
+          if (finalSticker.x < 5 || finalSticker.x > 95 || finalSticker.y < 5 || finalSticker.y > 95) {
+            console.log('[INFO] Sticker final position invalid - removing');
+            setImageStickers(prev => ({
+              ...prev,
+              [selectedImageIndex]: (prev[selectedImageIndex] || []).filter(s => s.id !== stickerId)
+            }));
+            setSelectedPreviewStickerId(null);
+          }
+        }
+      }
+      
+      document.removeEventListener('mousemove', handleMove);
+      document.removeEventListener('mouseup', handleEnd);
+      document.removeEventListener('touchmove', handleMove);
+      document.removeEventListener('touchend', handleEnd);
+    };
+
+    document.addEventListener('mousemove', handleMove);
+    document.addEventListener('mouseup', handleEnd);
+    document.addEventListener('touchmove', handleMove);
+    document.addEventListener('touchend', handleEnd);
+  };
+
+  // PHÓNG TO/THU NHỎ STICKER
+  const handlePreviewStickerScale = (stickerId, delta) => {
+    setImageStickers(prev => ({
+      ...prev,
+      [selectedImageIndex]: (prev[selectedImageIndex] || []).map(s =>
+        s.id === stickerId
+          ? { ...s, scale: Math.max(0.3, Math.min(3, s.scale + delta)) }
+          : s
+      )
+    }));
+  };
+
+  // XOAY STICKER
+  const handlePreviewStickerRotate = (stickerId, delta) => {
+    setImageStickers(prev => ({
+      ...prev,
+      [selectedImageIndex]: (prev[selectedImageIndex] || []).map(s =>
+        s.id === stickerId
+          ? { ...s, rotation: (s.rotation + delta) % 360 }
+          : s
+      )
+    }));
+  };
+
+  // XÓA STICKER
+  const handleDeletePreviewSticker = (stickerId) => {
+    setImageStickers(prev => ({
+      ...prev,
+      [selectedImageIndex]: (prev[selectedImageIndex] || []).filter(s => s.id !== stickerId)
+    }));
+    
+    if (selectedPreviewStickerId === stickerId) {
+      setSelectedPreviewStickerId(null);
+    }
+  };
+
+  // Thêm useEffect để validate real-time khi imageStickers thay đổi
+  useEffect(() => {
+    // Kiểm tra và xóa stickers không hợp lệ ngay lập tức
+    const currentStickers = imageStickers[selectedImageIndex] || [];
+    const invalidStickers = currentStickers.filter(s => 
+      s.x < 5 || s.x > 95 || s.y < 5 || s.y > 95
+    );
+    
+    if (invalidStickers.length > 0) {
+      console.log('[REAL-TIME VALIDATE] Found', invalidStickers.length, 'invalid stickers - removing now');
+      const validStickers = currentStickers.filter(s => 
+        s.x >= 5 && s.x <= 95 && s.y >= 5 && s.y <= 95
+      );
+      
+      setImageStickers(prev => ({
+        ...prev,
+        [selectedImageIndex]: validStickers
+      }));
+      
+      // Nếu sticker đang chọn bị xóa, deselect
+      if (selectedPreviewStickerId && invalidStickers.some(s => s.id === selectedPreviewStickerId)) {
+        setSelectedPreviewStickerId(null);
+      }
+    }
+  }, [imageStickers, selectedImageIndex]);
+
+  // Thêm useEffect để validate khi chuyển ảnh
+  useEffect(() => {
+    // Validate sticker cũ khi chuyển sang ảnh khác
+    if (selectedPreviewStickerId) {
+      const prevImageStickers = Object.keys(imageStickers);
+      prevImageStickers.forEach(imgIndex => {
+        const imgIdx = parseInt(imgIndex);
+        if (imgIdx !== selectedImageIndex) {
+          const stickers = imageStickers[imgIdx] || [];
+          const invalidStickers = stickers.filter(s => 
+            s.x < 5 || s.x > 95 || s.y < 5 || s.y > 95
+          );
+          
+          if (invalidStickers.length > 0) {
+            console.log('[INFO] Cleaning invalid stickers from image', imgIdx);
+            setImageStickers(prev => ({
+              ...prev,
+              [imgIdx]: stickers.filter(s => 
+                s.x >= 5 && s.x <= 95 && s.y >= 5 && s.y <= 95
+              )
+            }));
+          }
+        }
+      });
+      
+      // Reset selection khi chuyển ảnh
+      setSelectedPreviewStickerId(null);
+    }
+  }, [selectedImageIndex]);
+
+  // XÁC NHẬN STICKER - ẨN CÁC NÚT ĐIỀU KHIỂN + VALIDATE
+  const handleStickerConfirm = () => {
+    // Validate sticker hiện tại trước khi deselect
+    if (selectedPreviewStickerId) {
+      validateAndCleanSticker(selectedPreviewStickerId);
+    }
+    setSelectedPreviewStickerId(null);
+  };
+
+  // VALIDATE VÀ XÓA STICKER KHÔNG HỢP LỆ
+  const validateAndCleanSticker = (stickerId) => {
+    const sticker = (imageStickers[selectedImageIndex] || []).find(s => s.id === stickerId);
+    if (sticker) {
+      // Kiểm tra vị trí hợp lệ (5-95%)
+      if (sticker.x < 5 || sticker.x > 95 || sticker.y < 5 || sticker.y > 95) {
+        console.log('[INFO] Removing invalid sticker at position:', sticker.x, sticker.y);
+        setImageStickers(prev => ({
+          ...prev,
+          [selectedImageIndex]: (prev[selectedImageIndex] || []).filter(s => s.id !== stickerId)
+        }));
+      }
+    }
+  };
+
+  const handleStickerSelect = (stickerId) => {
+    // Validate sticker cũ trước khi chọn sticker mới
+    if (selectedPreviewStickerId && selectedPreviewStickerId !== stickerId) {
+      validateAndCleanSticker(selectedPreviewStickerId);
+    }
+    setSelectedPreviewStickerId(stickerId);
   };
 
   const renderSlotItem = (slot, index) => {
@@ -516,6 +892,9 @@ const SelPhoto = () => {
     const currentFilter = appliedFilters[index] ?
       filters.find(f => f.id === appliedFilters[index])?.filter : 'none';
 
+    // Hiển thị sticker trên thumbnail
+    const thumbStickers = imageStickers[index] || [];
+
     return (
       <div className="slot-container" key={index}>
         <div
@@ -538,6 +917,31 @@ const SelPhoto = () => {
                   borderRadius: '8px'
                 }}
               />
+
+              {/* Hiển thị stickers trên thumbnail - CHỈ STICKER HỢP LỆ TRONG VÙNG ẢNH */}
+              {thumbStickers
+                .filter(sticker => 
+                  sticker.x >= 5 && sticker.x <= 95 && 
+                  sticker.y >= 5 && sticker.y <= 95
+                )
+                .map(sticker => (
+                  <img
+                    key={sticker.id}
+                    src={sticker.src}
+                    alt="Sticker"
+                    style={{
+                      position: 'absolute',
+                      left: `${sticker.x}%`,
+                      top: `${sticker.y}%`,
+                      transform: `translate(-50%, -50%) scale(${sticker.scale * 0.4}) rotate(${sticker.rotation}deg)`,
+                      width: '60px',
+                      height: '60px',
+                      objectFit: 'contain',
+                      pointerEvents: 'none',
+                      zIndex: 3
+                    }}
+                  />
+                ))}
 
               <button
                 className="btn btn-sm btn-warning position-absolute d-flex align-items-center justify-content-center p-0"
@@ -672,17 +1076,6 @@ const SelPhoto = () => {
   };
 
   const renderSlots = () => {
-    const slotsContainerStyle = {
-      display: 'flex',
-      flexWrap: 'wrap',
-      gap: '15px',
-      justifyContent: 'center',
-      alignItems: 'flex-start',
-      height: '100%',
-      padding: '20px',
-      overflowY: 'auto'
-    };
-
     switch (cut) {
       case '3':
         return (
@@ -694,7 +1087,8 @@ const SelPhoto = () => {
             gap: '15px',
             width: '100%',
             height: '100%',
-            padding: '20px'
+            padding: '20px',
+            position: 'relative'
           }}>
             {selectedSlots.map((slot, index) => renderSlotItem(slot, index))}
           </div>
@@ -709,7 +1103,8 @@ const SelPhoto = () => {
             gap: '12px',
             width: '100%',
             height: '100%',
-            padding: '20px'
+            padding: '20px',
+            position: 'relative'
           }}>
             {selectedSlots.map((slot, index) => renderSlotItem(slot, index))}
           </div>
@@ -724,7 +1119,8 @@ const SelPhoto = () => {
             gap: '15px',
             width: '100%',
             height: '100%',
-            padding: '20px'
+            padding: '20px',
+            position: 'relative'
           }}>
             <div style={{ display: 'flex', gap: '15px' }}>
               {selectedSlots.slice(0, 2).map((slot, index) => renderSlotItem(slot, index))}
@@ -744,7 +1140,8 @@ const SelPhoto = () => {
             gap: '12px',
             width: '100%',
             height: '100%',
-            padding: '20px'
+            padding: '20px',
+            position: 'relative'
           }}>
             <div style={{ display: 'flex', gap: '12px' }}>
               {selectedSlots.slice(0, 2).map((slot, index) => renderSlotItem(slot, index))}
@@ -759,14 +1156,24 @@ const SelPhoto = () => {
         );
       default:
         return (
-          <div style={slotsContainerStyle}>
+          <div style={{ 
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: '15px',
+            justifyContent: 'center',
+            alignItems: 'flex-start',
+            height: '100%',
+            padding: '20px',
+            overflowY: 'auto',
+            position: 'relative' 
+          }}>
             {selectedSlots.map((slot, index) => renderSlotItem(slot, index))}
           </div>
         );
     }
   };
 
-  const hasEnhancedImage = originalImages[selectedImageIndex] && 
+  const hasEnhancedImage = originalImages[selectedImageIndex] &&
     selectedSlots[selectedImageIndex]?.photo !== originalImages[selectedImageIndex];
 
   return (
@@ -786,139 +1193,48 @@ const SelPhoto = () => {
           </div>
         </div>
 
-        <div className="col-md-5 d-flex flex-column p-4" style={{ height: '100vh', overflow: 'hidden' }}>
+        <div className="col-md-5 d-flex flex-column p-4" style={{ height: '100vh', overflow: 'auto' }}>
           <h4 className="mb-4 text-center">
             Chọn bộ lọc
           </h4>
 
-          {selectedSlots[selectedImageIndex] && (
-            <div className="selected-image-preview">
-              {hasEnhancedImage ? (
-                <div 
-                  ref={sliderRef}
-                  className="compare-slider-container"
-                  onMouseDown={handleSliderMouseDown}
-                  onTouchStart={handleSliderTouchStart}
-                >
-                  <img
-                    src={originalImages[selectedImageIndex]}
-                    alt="Original"
-                    style={{
-                      width: '100%',
-                      maxHeight: '220px',
-                      objectFit: 'contain',
-                      display: 'block',
-                      filter: filters.find(f => f.id === appliedFilters[selectedImageIndex])?.filter || 'none',
-                      transform: selectedSlots[selectedImageIndex].flip ? 'scaleX(-1)' : 'none'
-                    }}
-                  />
+          <ImagePreview
+            selectedSlot={selectedSlots[selectedImageIndex]}
+            selectedImageIndex={selectedImageIndex}
+            hasEnhancedImage={hasEnhancedImage}
+            originalImage={originalImages[selectedImageIndex]}
+            filters={filters}
+            appliedFilters={appliedFilters}
+            previewStickers={imageStickers[selectedImageIndex] || []}
+            selectedPreviewStickerId={selectedPreviewStickerId}
+            onStickerDragStart={handlePreviewStickerDragStart}
+            onStickerScale={handlePreviewStickerScale}
+            onStickerRotate={handlePreviewStickerRotate}
+            onStickerDelete={handleDeletePreviewSticker}
+            onStickerSelect={handleStickerSelect}
+            onStickerConfirm={handleStickerConfirm}
+          />
 
-                  <div
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      width: '100%',
-                      height: '100%',
-                      clipPath: `inset(0 ${100 - sliderPosition}% 0 0)`,
-                      transition: isDragging ? 'none' : 'clip-path 0.1s ease'
-                    }}
-                  >
-                    <img
-                      src={selectedSlots[selectedImageIndex].photo}
-                      alt="Enhanced"
-                      style={{
-                        width: '100%',
-                        maxHeight: '220px',
-                        objectFit: 'contain',
-                        display: 'block',
-                        filter: filters.find(f => f.id === appliedFilters[selectedImageIndex])?.filter || 'none',
-                        transform: selectedSlots[selectedImageIndex].flip ? 'scaleX(-1)' : 'none'
-                      }}
-                    />
-                  </div>
+          <FilterSection
+            filters={filters}
+            appliedFilters={appliedFilters}
+            selectedImageIndex={selectedImageIndex}
+            onApplyFilter={handleApplyFilter}
+          />
 
-                  <div
-                    className="compare-slider-divider"
-                    style={{
-                      left: `${sliderPosition}%`
-                    }}
-                  >
-                    <div className="compare-slider-handle">
-                      <div className="compare-slider-arrows">
-                        <div className="compare-slider-arrow-left" />
-                        <div className="compare-slider-arrow-right" />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="compare-label compare-label-original">
-                    GỐC
-                  </div>
-                  <div className="compare-label compare-label-enhanced">
-                    ĐÃ LÀM NÉT
-                  </div>
-                </div>
-              ) : (
-                <img
-                  src={selectedSlots[selectedImageIndex].photo}
-                  alt="Preview"
-                  style={{
-                    width: '100%',
-                    maxHeight: '220px',
-                    objectFit: 'contain',
-                    borderRadius: '8px',
-                    filter: filters.find(f => f.id === appliedFilters[selectedImageIndex])?.filter || 'none',
-                    transform: selectedSlots[selectedImageIndex].flip ? 'scaleX(-1)' : 'none'
-                  }}
-                />
-              )}
-
-              <p className="text-center mt-3 mb-0" style={{
-                color: '#ec4899',
-                fontWeight: '500',
-                fontSize: '16px'
-              }}>
-                Ảnh {selectedImageIndex + 1}
-                {hasEnhancedImage && (
-                  <span style={{ fontSize: '12px', marginLeft: '8px', color: '#ec4899' }}>
-                    (Kéo thanh để so sánh)
-                  </span>
-                )}
-              </p>
-            </div>
-          )}
-
-          <div className="filters-container mb-3">
-            {Array.from({ length: Math.ceil(filters.length / 3) }).map((_, rowIndex) => {
-              const startIndex = rowIndex * 3;
-              const rowFilters = filters.slice(startIndex, startIndex + 3);
-              const displayFilters = [...rowFilters, ...Array(3 - rowFilters.length).fill(null)];
-
-              return (
-                <div key={rowIndex} className="d-flex justify-content-between mb-2" style={{ gap: '10px' }}>
-                  {displayFilters.map((filter, colIndex) =>
-                    <div key={filter?.id || `empty-${colIndex}`} style={{ flex: 1, minWidth: 0 }}>
-                      {filter ? (
-                        <button
-                          className={`btn w-100 ${appliedFilters[selectedImageIndex] === filter.id ? 'btn-primary' : 'btn-outline-primary'}`}
-                          onClick={() => handleApplyFilter(filter.id)}
-                        >
-                          <span style={{
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap'
-                          }}>
-                            {filter.name}
-                          </span>
-                        </button>
-                      ) : null}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+          <StickerSection
+            filteredStickers={filteredStickers}
+            loadingStickers={loadingStickers}
+            stickerTypes={stickerTypes}
+            selectedStickerType={selectedStickerType}
+            showStickerTypeDropdown={showStickerTypeDropdown}
+            onStickerClick={handleStickerClick}
+            onStickerTypeChange={(type) => {
+              setSelectedStickerType(type);
+              setShowStickerTypeDropdown(false);
+            }}
+            onToggleDropdown={() => setShowStickerTypeDropdown(!showStickerTypeDropdown)}
+          />
 
           <div className="mt-4">
             <button

@@ -109,7 +109,7 @@ const Camera = () => {
                 username={username}
             />
             <div className={`camera-main-container ${sidebarCollapsed ? 'camera-sidebar-collapsed' : ''}`}>
-                <h1 className="camera-settings-title">CÀI ĐẶT MÁY ẢNH</h1>
+                <h1 className="camera-settings-title">THIẾT LẬP MÁY ẢNH</h1>
 
                 <div className="camera-settings-content">
                     {/* Vùng Live View */}

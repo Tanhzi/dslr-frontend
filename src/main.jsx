@@ -38,6 +38,8 @@ import Pricecut from './admin/Pricecut/Pricecut';
 import FrameAD from './admin/FrameAD/FrameAD';
 import AccountUser from './admin/AccountUser/AccountUser';
 import Rating from './admin/Rating/Rating';
+import Sticker from './admin/Sticker/Sticker';
+import AiTopic from './admin/AiTopic/AiTopic';
 
 // ================================
 // Error Boundary Component
@@ -298,6 +300,24 @@ const router = createHashRouter([
     element: (
       <AdminLayout>
         <Rating />
+      </AdminLayout>
+    ),
+    errorElement: <ErrorPage />,
+  },
+  {
+    path: '/Sticker',
+    element: (
+      <AdminLayout>
+        <Sticker />
+      </AdminLayout>
+    ),
+    errorElement: <ErrorPage />,
+  },
+  {
+    path: '/AiTopic',
+    element: (
+      <AdminLayout>
+        <AiTopic />
       </AdminLayout>
     ),
     errorElement: <ErrorPage />,

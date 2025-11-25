@@ -1,48 +1,32 @@
 /* ======== Download.css — SweetLens Feedback & Chatbot ======== */
 
 /* Cho phép cuộn trang */
-html, body {
+/* html, body {
   overflow-x: hidden;
   scroll-behavior: smooth;
-}
-
-/* Home button styles */
-.home-button {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  background-color: #4a90e2;
-  color: white;
-  border: none;
-  border-radius: 50%;
-  width: 50px;
-  height: 50px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-  z-index: 1000;
-  transition: all 0.3s ease;
-}
-
-.home-button:hover {
-  background-color: #357abd;
-  transform: scale(1.1);
-}
-
-.home-button:active {
-  transform: scale(0.95);
-}
+} */
 
 .download-container {
   min-height: 100vh;
-  background: linear-gradient(135deg, #fff0f5, #fff5fa, #fff9fb);
   padding: 20px 15px;
   font-family: 'Quicksand', sans-serif;
   line-height: 1.6;
+  position: relative;
 }
 
+/* Countdown */
+.countdown_dl {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  font-size: 24px;
+  font-weight: 800;
+  color: #d81b60;
+  padding: 10px 20px;
+  z-index: 1000;
+}
+
+/* Nội dung chính */
 .content-wrapper {
   max-width: 1200px;
   margin: 0 auto;
@@ -221,160 +205,7 @@ html, body {
   margin: 5px 0;
 }
 
-/* Animation */
-@keyframes pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-}
-
-/* ======== FEEDBACK SECTION — MỚI ======== */
-.feedback-section {
-  margin: 60px 0;
-  padding: 40px;
-  background: rgba(255, 245, 250, 0.7);
-  border-radius: 25px;
-  border: 3px dashed #ffb6c1;
-  text-align: center;
-}
-
-.feedback-section h3 {
-  color: #d81b60;
-  font-size: 1.8rem;
-  margin-bottom: 30px;
-  font-weight: 700;
-}
-
-.rating-criteria {
-  display: flex;
-  flex-direction: column;
-  gap: 25px;
-  max-width: 600px;
-  margin: 0 auto 30px;
-}
-
-.criterion {
-  text-align: left;
-  padding: 15px;
-  background: white;
-  border-radius: 15px;
-  border: 2px solid #ffb6c1;
-  box-shadow: 0 4px 10px rgba(255, 105, 180, 0.1);
-}
-
-.criterion-label {
-  font-weight: 700;
-  color: #d81b60;
-  margin-bottom: 10px;
-  font-size: 1.1rem;
-}
-
-.stars {
-  display: flex;
-  gap: 6px;
-}
-
-.star {
-  font-size: 1.8rem;
-  color: #ccc;
-  cursor: pointer;
-  transition: transform 0.2s, color 0.2s;
-  user-select: none;
-}
-
-.star.selected,
-.star:hover {
-  color: #ff69b4;
-  transform: scale(1.15);
-}
-
-.star.filled {
-  color: #ff69b4;
-}
-
-/* Comment Input */
-.feedback-comment {
-  width: 100%;
-  max-width: 600px;
-  margin: 20px auto;
-  padding: 16px;
-  font-size: 1.05rem;
-  border: 3px solid #ffb6c1;
-  border-radius: 20px;
-  background: #fff9fb;
-  color: #d81b60;
-  font-weight: 600;
-  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.05);
-  resize: vertical;
-  min-height: 100px;
-}
-
-.feedback-comment:focus {
-  outline: none;
-  border-color: #ff69b4;
-  box-shadow: 0 0 0 3px rgba(255, 105, 180, 0.2);
-}
-
-/* Submit Button */
-.feedback-submit-btn {
-  padding: 14px 40px;
-  font-size: 1.2rem;
-  font-weight: 700;
-  background: linear-gradient(135deg, #ff69b4, #d81b60);
-  color: white;
-  border: none;
-  border-radius: 50px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 5px 15px rgba(216, 27, 96, 0.3);
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
-.feedback-submit-btn:hover {
-  background: linear-gradient(135deg, #d81b60, #c71585);
-  transform: translateY(-3px);
-  box-shadow: 0 8px 20px rgba(199, 21, 133, 0.4);
-}
-
-.feedback-submit-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-}
-
-/* ======== FLOATING FEEDBACK BUTTON ======== */
-.floating-feedback-btn {
-  position: fixed;
-  bottom: 150px;
-  right: 30px;
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #ffb6c1, #ff9dc7);
-  color: white;
-  border: none;
-  font-size: 24px;
-  box-shadow: 0 6px 20px rgba(255, 105, 180, 0.3);
-  cursor: pointer;
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s ease;
-  animation: bounceFeedback 2.5s infinite;
-}
-
-.floating-feedback-btn:hover {
-  transform: scale(1.1) rotate(-10deg);
-  box-shadow: 0 8px 25px rgba(255, 105, 180, 0.4);
-}
-
-@keyframes bounceFeedback {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-6px); }
-}
-
-/* ======== FEEDBACK MODAL — TO HƠN, Ở GIỮA MÀN HÌNH ======== */
+/* === FEEDBACK MODAL === */
 .feedback-overlay {
   position: fixed;
   top: 0;
@@ -403,18 +234,6 @@ html, body {
   flex-direction: column;
   overflow: hidden;
   animation: zoomIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  position: relative;
-}
-
-@keyframes zoomIn {
-  from {
-    opacity: 0;
-    transform: scale(0.85);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
 }
 
 .feedback-header {
@@ -431,7 +250,6 @@ html, body {
   margin: 0;
   font-size: 1.7rem;
   font-weight: 700;
-  letter-spacing: 0.8px;
 }
 
 .feedback-close {
@@ -442,15 +260,15 @@ html, body {
   cursor: pointer;
   width: 44px;
   height: 44px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
   transition: all 0.25s ease;
 }
 
 .feedback-close:hover {
-  background: rgba(255, 255, 255, 0.25);
+  background: rgba(134, 219, 55, 0.25);
   transform: rotate(90deg);
 }
 
@@ -464,46 +282,6 @@ html, body {
   flex: 1;
 }
 
-/* === CÁC TIÊU CHÍ — TO HƠN === */
-.feedback-content .criterion {
-  background: white;
-  padding: 24px;
-  border-radius: 22px;
-  border: 3px solid #ffb6c1;
-  box-shadow: 0 5px 15px rgba(255, 105, 180, 0.15);
-  text-align: center;
-}
-
-.feedback-content .criterion-label {
-  font-weight: 800;
-  color: #d81b60;
-  margin-bottom: 16px;
-  font-size: 1.25rem;
-  line-height: 1.4;
-}
-
-.feedback-content .stars {
-  display: flex;
-  gap: 10px;
-  justify-content: center;
-}
-
-.feedback-content .star {
-  font-size: 2.4rem;
-  color: #e0e0e0;
-  cursor: pointer;
-  transition: all 0.25s ease;
-  user-select: none;
-}
-
-.feedback-content .star.filled,
-.feedback-content .star:hover {
-  color: #ff69b4;
-  transform: scale(1.2);
-  text-shadow: 0 2px 6px rgba(255, 105, 180, 0.3);
-}
-
-/* === Ô NHẬP TÊN === */
 .name-input-section {
   display: flex;
   flex-direction: column;
@@ -521,15 +299,14 @@ html, body {
   color: #e91e63;
 }
 
-/* === Ô bình luận — CAO & RỘNG HƠN === */
 .feedback-comment {
   width: 100%;
   padding: 20px;
+  font-size: 1.1rem;
   border: 3px solid #ffb6c1;
   border-radius: 20px;
   background: white;
   color: #d81b60;
-  font-size: 1.1rem;
   font-weight: 600;
   resize: vertical;
   min-height: 140px;
@@ -537,11 +314,54 @@ html, body {
   line-height: 1.5;
 }
 
-/* === Trạng thái gửi === */
+.rating-criteria {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.criterion {
+  text-align: center;
+  padding: 24px;
+  background: white;
+  border-radius: 22px;
+  border: 3px solid #ffb6c1;
+  box-shadow: 0 5px 15px rgba(255, 105, 180, 0.15);
+}
+
+.criterion-label {
+  font-weight: 800;
+  color: #d81b60;
+  margin-bottom: 16px;
+  font-size: 1.25rem;
+}
+
+.stars {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.star {
+  font-size: 2.4rem;
+  color: #e0e0e0;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  user-select: none;
+}
+
+.star.filled,
+.star:hover {
+  color: #ff69b4;
+  transform: scale(1.2);
+  text-shadow: 0 2px 6px rgba(255, 105, 180, 0.3);
+}
+
 .feedback-status {
   text-align: center;
   font-weight: 700;
-  margin: 0;
   padding: 14px;
   border-radius: 14px;
   font-size: 1.15rem;
@@ -559,7 +379,6 @@ html, body {
   border: 1px solid #ffcdd2;
 }
 
-/* === Nút gửi — TO, NỔI BẬT === */
 .feedback-submit-btn {
   padding: 18px 24px;
   font-size: 1.3rem;
@@ -591,7 +410,43 @@ html, body {
   transform: none;
 }
 
-/* ======== Responsive ======== */
+/* === ICON LOTTIE — CHỈ HIỂN THỊ ICON === */
+.lottie-icon-wrapper {
+  position: fixed;
+  z-index: 1000;
+  cursor: pointer;
+  width: fit-content;
+  height: fit-content;
+  /* Không có background, border, padding */
+}
+
+.lottie-icon-wrapper.home {
+  top: 40px;
+  right: 70px;
+}
+
+.lottie-icon-wrapper.feedback {
+  bottom: 200px;
+  right: 70px;
+}
+
+/* Animation */
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes zoomIn {
+  from { opacity: 0; transform: scale(0.85); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Responsive */
 @media (max-width: 768px) {
   .content-wrapper {
     padding: 30px 20px;
@@ -611,13 +466,8 @@ html, body {
     margin: 40px 0 25px;
   }
 
-  .feature-card,
-  .store-card {
+  .feature-card, .store-card {
     padding: 25px;
-  }
-
-  .stars {
-    justify-content: center;
   }
 
   .feedback-comment {
@@ -629,20 +479,16 @@ html, body {
     padding: 12px 30px;
     font-size: 1.1rem;
   }
+
+  .lottie-icon-wrapper.feedback {
+    bottom: 120px;
+    right: 18px;
+  }
 }
 
 @media (max-width: 480px) {
-  .floating-feedback-btn {
-    width: 52px;
-    height: 52px;
-    bottom: 120px;
-    right: 18px;
-    font-size: 22px;
-  }
-
   .feedback-container {
     width: 96%;
-    max-width: 96%;
     min-height: 480px;
     border-radius: 24px;
   }
@@ -666,10 +512,76 @@ html, body {
   .feedback-header h4 {
     font-size: 1.4rem;
   }
+
+  .countdown_dl {
+    top: 15px;
+    left: 15px;
+    font-size: 20px;
+    padding: 8px 16px;
+  }
 }
 
-/* Reusable fade-in animation (used by overlays) */
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+/* =============== VIRTUAL KEYBOARD =============== */
+.virtual-keyboard {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  padding: 16px;
+  box-shadow: 0 -4px 25px rgba(216, 27, 96, 0.25);
+  z-index: 2000;
+  border-top: 3px solid #ffb6c1;
+  border-top-left-radius: 28px;
+  border-top-right-radius: 28px;
+  /* 👇 TỰ ĐỘNG CO THEO NỘI DUNG, KHÔNG CÒN TRẮNG HAI BÊN */
+  width: fit-content;
+  min-width: 50%; /* Đảm bảo đủ rộng trên mobile */
+  max-width: 56%; /* Không vượt quá màn hình */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.keyboard-row-dl {
+  display: flex;
+  justify-content: center;
+  gap: 8px; /* Tăng gap cho thoáng */
+  margin-bottom: 10px;
+}
+
+.key-dl {
+  /* 👇 PHÓNG TO PHÍM LÊN */
+  width: 52px;
+  height: 64px;
+  font-size: 1.4rem;
+  font-weight: 700;
+  background: #fff9fb;
+  border: 2px solid #ffb6c1;
+  border-radius: 18px; /* Bo tròn mềm hơn */
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #d81b60;
+  transition: all 0.2s ease;
+  user-select: none;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+.key-dl:hover {
+  background: #ffebf2;
+  transform: translateY(-3px);
+  border-color: #ff69b4;
+}
+
+.key-dl:active {
+  transform: translateY(1px) scale(0.97);
+  background: #ffe0eb;
+}
+
+.key-dl.wide {
+  width: 140px; /* Cố định width cho nút đặc biệt */
+  max-width: none;
+  font-size: 1.2rem;
 }

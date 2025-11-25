@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import './Frame.css';
 import { useCountdown } from "../../contexts/CountdownContext";
+import Chatbot from '../../components/Chatbot';
 
 function Frame() {
   const location = useLocation();
@@ -340,6 +341,7 @@ function Frame() {
           TIẾP TỤC
         </button>
       </div>
+      <Chatbot />
     </div>
   );
 }

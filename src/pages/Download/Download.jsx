@@ -1,44 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaHome } from 'react-icons/fa';
+import Lottie from 'lottie-react';
+import Chatbot from '../../components/Chatbot';
 import './Download.css';
 
 const Download = () => {
   const navigate = useNavigate();
 
-  //countdown
-  // State cho countdown và chuyển trang tự động
+  // Các state cũ...
   const [countdown, setCountdown] = useState(100);
   const [autoTriggered, setAutoTriggered] = useState(false);
-
-    // Giảm countdown mỗi giây
-    useEffect(() => {
-      if (countdown <= 0) return;
-      const timer = setInterval(() => {
-        setCountdown(prev => prev - 1);
-      }, 1000);
-      return () => clearInterval(timer);
-    }, [countdown]);
-    
-    // Khi countdown về 0, tự động gọi handleFinish
-    useEffect(() => {
-      if (countdown === 0 && !autoTriggered) {
-        setAutoTriggered(true);
-        handleFinish();
-      }
-    }, [countdown, autoTriggered]);
-
-    const handleFinish = () => {
-      navigate('/Appclien');
-    };
-
-  // Chatbot state
-  const [isChatOpen, setIsChatOpen] = useState(false);
-  const [messages, setMessages] = useState([]);
-  const [inputMessage, setInputMessage] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-
-  // ✅ Feedback state
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [customerName, setCustomerName] = useState('');
   const [ratings, setRatings] = useState({
@@ -50,78 +21,139 @@ const Download = () => {
   const [comment, setComment] = useState('');
   const [submitStatus, setSubmitStatus] = useState('');
 
-  const stores = [
-    { name: "SweetLens Quận 1", address: "123 Đường Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP.HCM" },
-    { name: "SweetLens Quận 7", address: "456 Đường Nguyễn Thị Thập, Phường Tân Phú, Quận 7, TP.HCM" },
-    { name: "SweetLens Đà Nẵng", address: "789 Đường Bạch Đằng, Quận Hải Châu, Đà Nẵng" }
-  ];
+  const [homeAnimation, setHomeAnimation] = useState(null);
+  const [starAnimation, setStarAnimation] = useState(null);
 
-  // ✅ Tự động mở feedback khi vào trang
+  // === BÀN PHÍM ẢO ===
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+  const [activeInput, setActiveInput] = useState(null); // 'name' hoặc 'comment'
+  const keyboardRef = useRef(null);
+  const nameInputRef = useRef(null);
+  const commentInputRef = useRef(null);
+
+  // Các state cũ (countdown, scroll, load Lottie...) giữ nguyên
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsFeedbackOpen(true);
-    }, 300); // delay nhẹ để tránh conflict với render
+    if (countdown <= 0) return;
+    const timer = setInterval(() => setCountdown(prev => prev - 1), 1000);
+    return () => clearInterval(timer);
+  }, [countdown]);
+
+  useEffect(() => {
+    if (countdown === 0 && !autoTriggered) {
+      setAutoTriggered(true);
+      handleFinish();
+    }
+  }, [countdown, autoTriggered]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsFeedbackOpen(true), 300);
     return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
     document.body.style.overflow = 'auto';
-    document.documentElement.style.overflow = 'auto';
     return () => {
       document.body.style.overflow = 'hidden';
-      document.documentElement.style.overflow = 'hidden';
     };
   }, []);
 
-  // === Chatbot logic (giữ nguyên) ===
-  const handleSendMessage = async () => {
-    if (!inputMessage.trim() || isLoading) return;
-    const userMsg = { role: 'user', content: inputMessage };
-    setMessages((prev) => [...prev, userMsg]);
-    setInputMessage('');
-    setIsLoading(true);
+  useEffect(() => {
+    fetch('/lotties/Home.json')
+      .then(res => (res.ok ? res.json() : null))
+      .then(setHomeAnimation)
+      .catch(err => console.error('Lỗi tải home.json:', err));
 
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: inputMessage }),
-      });
-      const data = await response.json();
-      if (response.ok && data.reply) {
-        setMessages((prev) => [...prev, { role: 'assistant', content: data.reply }]);
-      } else {
-        throw new Error(data.error || 'Không thể kết nối AI lúc này.');
+    fetch('/lotties/Star.json')
+      .then(res => (res.ok ? res.json() : null))
+      .then(setStarAnimation)
+      .catch(err => console.error('Lỗi tải star.json:', err));
+  }, []);
+
+  // === Đóng bàn phím khi click ra ngoài ===
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (keyboardRef.current && !keyboardRef.current.contains(e.target)) {
+        setIsKeyboardOpen(false);
+        setActiveInput(null);
       }
-    } catch (err) {
-      console.error('Lỗi khi gọi chatbot:', err);
-      setMessages((prev) => [...prev, {
-        role: 'assistant',
-        content: '❌ Không thể kết nối trợ lý AI. Vui lòng thử lại sau!'
-      }]);
-    } finally {
-      setIsLoading(false);
+    };
+    if (isKeyboardOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isKeyboardOpen]);
+
+  const handleFinish = () => {
+    navigate('/Appclien');
+  };
+
+  // Mở bàn phím và ghi nhớ input đang active
+  const handleInputFocus = (type) => {
+    setActiveInput(type);
+    setIsKeyboardOpen(true);
+  };
+
+  // === LOGIC BÀN PHÍM ẢO ===
+  const [isCaps, setIsCaps] = useState(false);
+  const [isVietnamese, setIsVietnamese] = useState(true); // Mặc định bật tiếng Việt
+
+  // Bảng ký tự tiếng Việt (chỉ hỗ trợ dấu cơ bản)
+  const VIETNAMESE_MAP = {
+    'a': 'á à ả ã ạ ă â',
+    'e': 'é è ẻ ẽ ẹ ê',
+    'i': 'í ì ỉ ĩ ị',
+    'o': 'ó ò ỏ õ ọ ô ơ',
+    'u': 'ú ù ủ ũ ụ ư',
+    'y': 'ý ỳ ỷ ỹ ỵ',
+    'd': 'đ'
+  };
+
+  const getLayout = () => {
+    const letters = isCaps ? 'QWERTYUIOPASDFGHJKLZXCVBNM' : 'qwertyuiopasdfghjkllzxcvbnm';
+    const firstRow = letters.slice(0, 10).split('');
+    const secondRow = letters.slice(10, 19).split('');
+    const thirdRow = letters.slice(19).split('');
+
+    return [firstRow, secondRow, thirdRow];
+  };
+
+  const handleKeyClick = (key) => {
+    if (key === 'BACKSPACE') {
+      if (activeInput === 'name') {
+        setCustomerName(prev => prev.slice(0, -1));
+      } else if (activeInput === 'comment') {
+        setComment(prev => prev.slice(0, -1));
+      }
+    } else if (key === 'SPACE') {
+      if (activeInput === 'name') setCustomerName(prev => prev + ' ');
+      else setComment(prev => prev + ' ');
+    } else if (key === 'SHIFT') {
+      setIsCaps(prev => !prev);
+    } else if (key === 'ENTER') {
+      // Không xử lý ENTER cho name, chỉ cho comment nếu cần
+      if (activeInput === 'comment') setComment(prev => prev + '\n');
+    } else if (key === 'ĐÓNG') {
+      setIsKeyboardOpen(false);
+      setActiveInput(null);
+    } else {
+      // Xử lý ký tự
+      let char = key;
+      if (activeInput === 'name') setCustomerName(prev => prev + char);
+      else setComment(prev => prev + char);
     }
   };
 
-  const handleNavigateToStore = (store) => {
-    const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(store.address)}`;
-    window.open(url, '_blank');
-  };
-
-  // === Feedback logic ===
+  // === Các hàm cũ: handleStarClick, handleSubmitFeedback, renderStars, stores, handleNavigateToStore — giữ nguyên ===
   const handleStarClick = (criterion, value) => {
     setRatings(prev => ({ ...prev, [criterion]: value }));
   };
 
   const handleSubmitFeedback = async (e) => {
     e.preventDefault();
-    // Bắt buộc nhập tên
     if (!customerName.trim()) {
       setSubmitStatus('Vui lòng nhập tên của bạn.');
       return;
     }
-    // Cho phép gửi nếu có ít nhất 1 sao HOẶC có bình luận
     const hasRating = Object.values(ratings).some(r => r > 0);
     if (!hasRating && !comment.trim()) {
       setSubmitStatus('Vui lòng đánh giá hoặc để lại bình luận.');
@@ -178,20 +210,32 @@ const Download = () => {
     ));
   };
 
+  const stores = [
+    { name: "SweetLens Quận 1", address: "123 Đường Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP.HCM" },
+    { name: "SweetLens Quận 7", address: "456 Đường Nguyễn Thị Thập, Phường Tân Phú, Quận 7, TP.HCM" },
+    { name: "SweetLens Đà Nẵng", address: "789 Đường Bạch Đằng, Quận Hải Châu, Đà Nẵng" }
+  ];
+
+  const handleNavigateToStore = (store) => {
+    const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(store.address)}`;
+    window.open(url, '_blank');
+  };
+
   return (
     <div className="download-container">
-      <button 
-        onClick={handleFinish}
-        className="home-button"
-        title="Về màn hình chính"
-      >
-        <FaHome size={24} />
-      </button>
-      <div className='countdown'>
-      ⌛: {countdown}
+      {/* Icon Home */}
+      <div className="lottie-icon-wrapper home" onClick={handleFinish} title="Về màn hình chính">
+        {homeAnimation ? (
+          <Lottie animationData={homeAnimation} loop autoplay style={{ width: '64px', height: '64px' }} />
+        ) : (
+          <span style={{ fontSize: '32px' }}>🏠</span>
+        )}
       </div>
-      {/* Nội dung chính (giống như trước, KHÔNG có feedback ở đây) */}
+
+      <div className="countdown_dl">⌛: {countdown}</div>
+
       <div className="content-wrapper">
+        {/* ... giữ nguyên phần hero, features, stores, footer ... */}
         <section className="hero-section">
           <h1 className="title">💖 SweetLens Photo Booth 💖</h1>
           <p className="subtitle">
@@ -224,43 +268,40 @@ const Download = () => {
         </footer>
       </div>
 
-      {/* Floating Buttons */}
-      <button
-        className="floating-feedback-btn"
-        onClick={() => setIsFeedbackOpen(true)}
-        aria-label="Phản hồi trải nghiệm"
-      >
-        🎀
-      </button>
+      {/* Icon Feedback */}
+      <div className="lottie-icon-wrapper feedback" onClick={() => setIsFeedbackOpen(true)} aria-label="Phản hồi trải nghiệm">
+        {starAnimation ? (
+          <Lottie animationData={starAnimation} loop autoplay style={{ width: '74px', height: '74px' }} />
+        ) : (
+          <span style={{ fontSize: '74px' }}>🎀</span>
+        )}
+      </div>
 
-      <button
-        className="floating-chat-btn"
-        onClick={() => setIsChatOpen(true)}
-        aria-label="Hỗ trợ AI"
-      >
-        💬
-      </button>
-
-      {/* ✅ FEEDBACK MODAL (overlay) */}
+      {/* Modal Feedback */}
       {isFeedbackOpen && (
         <div className="feedback-overlay" onClick={() => setIsFeedbackOpen(false)}>
           <div className="feedback-container" onClick={(e) => e.stopPropagation()}>
             <div className="feedback-header">
-              <h4>🎀 Phản hồi SweetLens</h4>
+              {starAnimation ? (
+                <Lottie animationData={starAnimation} loop autoplay style={{ width: '64px', height: '64px' }} />
+              ) : (
+                <span style={{ fontSize: '64px' }}>🎀</span>
+              )}
+              <span className='h4'>Phản hồi SweetLens</span>
               <button className="feedback-close" onClick={() => setIsFeedbackOpen(false)}>×</button>
             </div>
             <div className="feedback-content">
-              {/* Ô NHẬP TÊN */}
-             {/* Ô NHẬP TÊN – ĐÃ ĐỒNG BỘ STYLE VỚI feedback-comment */}
               <div className="name-input-section">
                 <label className="name-label">Họ & tên <span className="required">*</span></label>
                 <input
+                  ref={nameInputRef}
                   type="text"
-                  className="feedback-comment"  // Dùng chung class với textarea
+                  className="feedback-comment"
                   placeholder="Nhập tên của bạn..."
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
-                  maxLength="100"
+                  onFocus={() => handleInputFocus('name')}
+                  readOnly // 👈 Ngăn bàn phím thật (nếu có)
                 />
               </div>
               <div className="rating-criteria">
@@ -278,15 +319,18 @@ const Download = () => {
               </div>
 
               <textarea
+                ref={commentInputRef}
                 className="feedback-comment"
                 placeholder="Chia sẻ thêm ý kiến... (tùy chọn)"
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
+                onFocus={() => handleInputFocus('comment')}
+                readOnly // 👈 Ngăn bàn phím thật
                 rows="3"
               />
 
               {submitStatus && (
-                <p className={`feedback-status ${submitStatus.includes('✅') ? 'success' : submitStatus.includes('❌') ? 'error' : ''}`}>
+                <p className={`feedback-status ${submitStatus.includes('Cảm ơn') ? 'success' : 'error'}`}>
                   {submitStatus}
                 </p>
               )}
@@ -303,38 +347,35 @@ const Download = () => {
         </div>
       )}
 
-      {/* Chatbot (giữ nguyên) */}
-      {isChatOpen && (
-        <div className="chat-overlay" onClick={() => setIsChatOpen(false)}>
-          <div className="chat-container" onClick={(e) => e.stopPropagation()}>
-            <div className="chat-header">
-              <h4>🤖 Trợ lý SweetLens AI</h4>
-              <button className="chat-close" onClick={() => setIsChatOpen(false)}>×</button>
+      {/* === BÀN PHÍM ẢO === */}
+      {isKeyboardOpen && (
+        <div className="virtual-keyboard" ref={keyboardRef}>
+          {getLayout().map((row, rowIndex) => (
+            <div key={rowIndex} className="keyboard-row-dl">
+              {row.map((key) => (
+                <button
+                  key={key}
+                  className="key-dl"
+                  onClick={() => handleKeyClick(key)}
+                >
+                  {key}
+                </button>
+              ))}
             </div>
-            <div className="chat-messages">
-              {messages.length === 0 ? (
-                <div className="chat-welcome">Xin chào! Mình có thể giúp gì cho bạn? 😊</div>
-              ) : (
-                messages.map((msg, idx) => <div key={idx} className={`message ${msg.role}`}>{msg.content}</div>)
-              )}
-              {isLoading && <div className="message assistant"><span className="typing-indicator">Đang suy nghĩ...</span></div>}
-            </div>
-            <div className="chat-input-area">
-              <input
-                type="text"
-                value={inputMessage}
-                onChange={(e) => setInputMessage(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                placeholder="Nhập câu hỏi..."
-                disabled={isLoading}
-                className="chat-input"
-              />
-              <button onClick={handleSendMessage} disabled={!inputMessage.trim() || isLoading} className="chat-send-btn">↵</button>
-            </div>
+          ))}
+
+          {/* Hàng cuối: Space, Backspace, v.v. */}
+          <div className="keyboard-row-dl">
+            <button className="key-dl wide" onClick={() => handleKeyClick('ĐÓNG')}>Đóng</button>
+            <button className="key-dl" onClick={() => handleKeyClick('SHIFT')}>{isCaps ? 'Aa' : 'aA'}</button>
+            <button className="key-dl wide" onClick={() => handleKeyClick('SPACE')}>Space</button>
+            <button className="key-dl" onClick={() => handleKeyClick('BACKSPACE')}>⌫</button>
           </div>
         </div>
       )}
+      <Chatbot />
     </div>
+
   );
 };
 

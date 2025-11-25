@@ -111,7 +111,7 @@ const Pricecut = () => {
             />
             <div className={`pricecut-main-container ${sidebarCollapsed ? 'pricecut-sidebar-collapsed' : ''}`}>
                 <div className="pricecut-header-section">
-                    <h2 className="pricecut-heading">Kích thước</h2>
+                    <h2 className="pricecut-heading">THIẾT LẬP GIÁ TIỀN</h2>
                     <select
                         className="pricecut-size-select"
                         value={selectedSize}

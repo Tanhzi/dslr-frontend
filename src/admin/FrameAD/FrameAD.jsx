@@ -60,7 +60,7 @@ const FrameAD = () => {
   });
 
   const itemsPerPage = 10;
-  const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+  const API_URL = import.meta.env.VITE_API_BASE_URL;
   const API_URL1 ='http://localhost:8000';
 
   // === LẤY DANH SÁCH KHUNG ẢNH ===

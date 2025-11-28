@@ -23,8 +23,8 @@ const Promotion = () => {
 
     // Form state
     const [discount, setDiscount] = useState({
-        startDate: '',
-        endDate: '',
+        startdate: '',
+        enddate: '',
         value: '',
         quantity: ''
     });
@@ -73,14 +73,14 @@ const Promotion = () => {
     }, [id_admin]);
 
     // Logic trạng thái
-    const getStatus = (startDate, endDate) => {
+    const getStatus = (startdate, enddate) => {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         
-        const start = new Date(startDate);
+        const start = new Date(startdate);
         start.setHours(0, 0, 0, 0);
         
-        const end = new Date(endDate);
+        const end = new Date(enddate);
         end.setHours(23, 59, 59, 999);
         
         if (today >= start && today <= end) return 'Đang diễn ra';
@@ -93,12 +93,12 @@ const Promotion = () => {
         return discounts.filter(d => {
             const matchesSearch = !searchTerm ||
                 d.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                d.startDate.includes(searchTerm) ||
-                d.endDate.includes(searchTerm) ||
+                d.startdate.includes(searchTerm) ||
+                d.enddate.includes(searchTerm) ||
                 d.value.toString().includes(searchTerm) ||
                 d.quantity.toString().includes(searchTerm);
 
-            const matchesFilter = filter === 'all' || getStatus(d.startDate, d.endDate) === filter;
+            const matchesFilter = filter === 'all' || getStatus(d.startdate, d.enddate) === filter;
             return matchesSearch && matchesFilter;
         });
     }, [discounts, searchTerm, filter]);
@@ -238,14 +238,14 @@ const Promotion = () => {
     const onClose = () => {
         setShowForm(false);
         setCurrentDiscount(null);
-        setDiscount({ startDate: '', endDate: '', value: '', quantity: '' });
+        setDiscount({ startdate: '', enddate: '', value: '', quantity: '' });
     };
 
     useEffect(() => {
         if (currentDiscount) {
             setDiscount({
-                startDate: currentDiscount.startDate,
-                endDate: currentDiscount.endDate,
+                startdate: currentDiscount.startdate,
+                enddate: currentDiscount.enddate,
                 value: currentDiscount.value,
                 quantity: currentDiscount.quantity
             });
@@ -360,13 +360,13 @@ const Promotion = () => {
                                             </td>
                                             <td>{d.id}</td>
                                             <td><strong>{d.code}</strong></td>
-                                            <td>{d.startDate}</td>
-                                            <td>{d.endDate}</td>
+                                            <td>{d.startdate}</td>
+                                            <td>{d.enddate}</td>
                                             <td>{d.value.toLocaleString('vi-VN')}đ</td>
                                             <td>{d.quantity}</td>
                                             <td>{d.quantity - d.count_quantity}</td>
-                                            <td><span className={`status-${getStatus(d.startDate, d.endDate).toLowerCase().replace(/ /g, '-')}`}>
-                                                {getStatus(d.startDate, d.endDate)}
+                                            <td><span className={`status-${getStatus(d.startdate, d.enddate).toLowerCase().replace(/ /g, '-')}`}>
+                                                {getStatus(d.startdate, d.enddate)}
                                             </span></td>
                                             <td className="promotionpro-actions">
                                                 <button onClick={() => { setShowForm(true); setCurrentDiscount(d); }} className="edit-btn">
@@ -412,11 +412,11 @@ const Promotion = () => {
                         <h3>{currentDiscount ? "Chỉnh sửa mã giảm giá" : "Tạo mã giảm giá mới"}</h3>
                         <div className="modal-field">
                             <label>Ngày bắt đầu</label>
-                            <input type="date" name="startDate" value={discount.startDate} onChange={handleChange} />
+                            <input type="date" name="startdate" value={discount.startdate} onChange={handleChange} />
                         </div>
                         <div className="modal-field">
                             <label>Ngày kết thúc</label>
-                            <input type="date" name="endDate" value={discount.endDate} onChange={handleChange} />
+                            <input type="date" name="enddate" value={discount.enddate} onChange={handleChange} />
                         </div>
                         <div className="modal-field">
                             <label>Giá trị giảm (VNĐ)</label>

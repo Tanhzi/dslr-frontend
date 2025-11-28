@@ -61,6 +61,7 @@ const FrameAD = () => {
 
   const itemsPerPage = 10;
   const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+  const API_URL1 ='http://localhost:8000';
 
   // === LẤY DANH SÁCH KHUNG ẢNH ===
   const fetchFrames = async (page = 1, search = '', cut = '') => {
@@ -648,7 +649,20 @@ const FrameAD = () => {
                   frames.map((frame, index) => (
                     <tr key={frame.id} onClick={() => toggleSelectFrame(frame)} className={selectedFrame?.id === frame.id ? 'selected-row' : ''} style={{ cursor: 'pointer' }}>
                       <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
-                      <td><img src={frame.frame || '/placeholder.png'} alt="frame" className="frame-thumb" /></td>
+<td>
+  <img 
+    src={frame.frame 
+      ? (frame.frame.startsWith('http') 
+          ? frame.frame 
+          : `${API_URL1}${frame.frame}`)
+      : '/placeholder.png'} 
+    alt="frame" 
+    className="frame-thumb" 
+    onError={(e) => {
+      e.target.src = '/placeholder.png';
+    }}
+  />
+</td>
                       <td>{frame.event_name || 'Chưa có'}</td>
                       <td>{cutOptions.find(c => c.value === frame.cuts)?.label || frame.cuts}</td>
                       <td>{frame.type}</td>

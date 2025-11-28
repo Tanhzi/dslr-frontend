@@ -62,14 +62,38 @@ function Crecuts() {
   const [smallPrices, setSmallPrices] = useState([]);
   const [largePrices, setLargePrices] = useState([]);
 
-  // Xử lý background khi có dữ liệu
-  useEffect(() => {
-    if (backgroundData?.ev_back === 2 && backgroundData.background) {
-      document.body.style.backgroundImage = `url(data:image/jpeg;base64,${backgroundData.background})`;
+// 🔥 Xử lý background khi có dữ liệu
+useEffect(() => {
+  if (backgroundData?.status === 'success' && backgroundData.background) {
+    const fullBackgroundUrl = backgroundData.background.startsWith('http')
+      ? backgroundData.background
+      : `${import.meta.env.VITE_API_BASE_URL}/${backgroundData.background}`;
+
+    // ✅ Lưu background vào localStorage
+    localStorage.removeItem('backgroundImage');
+    localStorage.setItem('backgroundImage', fullBackgroundUrl);
+
+    if (backgroundData.applyBackground) {
+      document.body.style.backgroundImage = `url(${fullBackgroundUrl})`;
       document.body.style.backgroundSize = 'cover';
       document.body.style.backgroundRepeat = 'no-repeat';
+      document.body.style.backgroundAttachment = 'fixed';
+    } else {
+      document.body.style.backgroundImage = 'none';
+      // Xóa background trong localStorage nếu không áp dụng
+      localStorage.removeItem('backgroundImage');
     }
-  }, [backgroundData]);
+  } else {
+    // Nếu không có background hợp lệ, xóa khỏi localStorage
+    localStorage.removeItem('backgroundImage');
+    document.body.style.backgroundImage = 'none';
+  }
+
+  // Cleanup khi component unmount
+  return () => {
+    document.body.style.backgroundImage = 'none';
+  };
+}, [backgroundData]);
 
   // Xử lý prices khi có dữ liệu
   useEffect(() => {

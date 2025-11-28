@@ -28,6 +28,21 @@ function Beframe() {
   // Lấy tất cả dữ liệu cần thiết từ CountdownContext
   const { formattedCountdown, startCountdown, isInitialized, countdown } = useCountdown();
 
+  // ✅ Áp dụng background từ localStorage nếu có
+  useEffect(() => {
+    const savedBackground = localStorage.getItem('backgroundImage');
+    if (savedBackground) {
+      document.body.style.backgroundImage = `url(${savedBackground})`;
+      document.body.style.backgroundSize = 'cover';
+      document.body.style.backgroundRepeat = 'no-repeat';
+      document.body.style.backgroundAttachment = 'fixed';
+    }
+
+    // Cleanup khi rời khỏi trang
+    return () => {
+      document.body.style.backgroundImage = 'none';
+    };
+  }, []);
   // Bắt đầu đếm ngược khi đã có dữ liệu
   useEffect(() => {
     if (isInitialized) {
@@ -42,7 +57,7 @@ function Beframe() {
     }
   }, [countdown, navigate]);
 
-  // LẤY KHUNG ẢNH TỪ API THEO LOGIC CŨ (chính xác như file cũ)
+  // 🔥 FETCH KHUNG ẢNH VÀ GHÉP FULL URL CHO FRAME
   useEffect(() => {
     if (!id_admin || !id_topic || !cut) return;
 
@@ -54,12 +69,20 @@ function Beframe() {
         const result = await response.json();
 
         if (result.status === 'success' && result.data) {
+          // ✅ XỬ LÝ: GHÉP FULL URL CHO MỖI FRAME
           const processedFrames = result.data
             .filter(f => f.frame) // Loại bỏ frame null
-            .map(frame => ({
-              ...frame,
-              type: frame.type || 'default'
-            }));
+            .map(frame => {
+              const fullFrameUrl = frame.frame.startsWith('http')
+                ? frame.frame
+                : `${frame.frame}`;
+
+              return {
+                ...frame,
+                frame: fullFrameUrl, // ← DÙNG URL ĐẦY ĐỦ
+                type: frame.type || 'default',
+              };
+            });
 
           setFramesList(processedFrames);
 
@@ -91,23 +114,23 @@ function Beframe() {
     }
   }, [selectedType, filteredFrames.length]);
 
-  // Xử lý khi nhấn "TIẾP TỤC" - ĐÃ SỬA: TRUYỀN selectedFrame và selectedFrameId
+  // Xử lý khi nhấn "TIẾP TỤC"
   const handleContinue = () => {
-      if (filteredFrames.length === 0) return;
+    if (filteredFrames.length === 0) return;
 
-      const selectedFrame = filteredFrames[currentFrameIndex];
-      if (!selectedFrame.frame) return;
+    const selectedFrame = filteredFrames[currentFrameIndex];
+    if (!selectedFrame.frame) return;
 
-      navigate('/Process', {
-        state: {
-          selectedFrame: selectedFrame.frame,      // ← ĐÃ THÊM
-          selectedFrameId: selectedFrame.id,       // ← ĐÃ THÊM
-          frameType: selectedFrame.type,
-          size,
-          cut
-        }
-      });
-    };
+    navigate('/Process', {
+      state: {
+        selectedFrame: selectedFrame.frame,
+        selectedFrameId: selectedFrame.id,
+        frameType: selectedFrame.type,
+        size,
+        cut,
+      },
+    });
+  };
 
   // Chuyển khung ảnh
   const handlePrevFrame = () => {
@@ -137,6 +160,9 @@ function Beframe() {
                 src={currentFrameSrc}
                 alt="Selected Frame"
                 className="selected-frame-image pt-2 pb-2"
+                onError={(e) => {
+                  e.target.src = '/placeholder-frame.png'; // fallback nếu cần
+                }}
               />
             </div>
           ) : (
@@ -162,11 +188,14 @@ function Beframe() {
             <div className="thumbnails-wrapper">
               {filteredFrames.map((frame, index) => (
                 <img
-                  key={index}
+                  key={frame.id || index}
                   src={frame.frame}
                   alt={`Frame ${index + 1}`}
                   className={`thumbnail ${index === currentFrameIndex ? 'selected' : ''}`}
                   onClick={() => setCurrentFrameIndex(index)}
+                  onError={(e) => {
+                    e.target.style.opacity = '0.3'; // hoặc ẩn đi
+                  }}
                 />
               ))}
             </div>

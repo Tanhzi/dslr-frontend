@@ -8,10 +8,9 @@ import './Appclien.css';
 
 function Appclien() {
   const navigate = useNavigate();
-
   const [backgroundImage, setBackgroundImage] = useState(null);
   const [isGlobalBackground, setIsGlobalBackground] = useState(false);
-  const [logoImage, setLogoImage] = useState('logo.jpg');
+  const [logoImage, setLogoImage] = useState('/logo.jpg'); // fallback local
   const [notes, setNotes] = useState([
     'Máy sẽ chụp tự động sau mỗi 10s',
     'Nếu là lần đầu đến với Memory booth\nHãy liên hệ nhân viên để được hỗ trợ',
@@ -50,7 +49,7 @@ function Appclien() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [navigate]);
 
-  // Load Lottie chào mừng (không liên quan đến chatbot)
+  // Load Lottie chào mừng
   useEffect(() => {
     fetch('/lotties/Robotsayshello.json')
       .then((res) => {
@@ -64,7 +63,7 @@ function Appclien() {
       });
   }, []);
 
-  // 🔥 DÙNG REACT QUERY ĐỂ FETCH + CACHE DỮ LIỆU
+  // Fetch event data
   const { data: eventData, isLoading, error } = useQuery({
     queryKey: ['event', id_admin, id_topic],
     queryFn: async () => {
@@ -78,37 +77,44 @@ function Appclien() {
     staleTime: 5 * 60 * 1000,
   });
 
-  // Xử lý dữ liệu event
+  // ✅ XỬ LÝ ẢNH MỚI: DÙNG TRỰC TIẾP URL TỪ BACKEND
   useEffect(() => {
-    if (eventData && !eventData.status) {
-      // Background
-      if (eventData.background) {
-        const bgUrl = `data:image/jpeg;base64,${eventData.background}`;
-        if (eventData.ev_back === 1) {
-          setBackgroundImage(bgUrl);
-          setIsGlobalBackground(false);
-        } else if (eventData.ev_back === 2) {
-          setBackgroundImage(bgUrl);
-          setIsGlobalBackground(true);
-        }
-      }
+    if (!eventData || eventData.status === 'error') return;
 
-      // Logo
-      if (eventData.logo && eventData.ev_logo === 1) {
-        setLogoImage(`data:image/jpeg;base64,${eventData.logo}`);
-      }
+    const baseUrl = "http://localhost:8000"
 
-      // Notes
-      if (eventData.notes && eventData.ev_note === 1) {
-        const newNotes = [
-          eventData.notes.note1 || notes[0],
-          eventData.notes.note2 || notes[1],
-          eventData.notes.note3 || notes[2],
-        ];
-        setNotes(newNotes);
-      }
+    // Background
+    if (eventData.background) {
+      const fullBgUrl = eventData.background.startsWith('http')
+        ? eventData.background
+        : `${baseUrl}${eventData.background}`; // → http://localhost:8000/storage/...
+
+      setBackgroundImage(fullBgUrl);
+      setIsGlobalBackground(eventData.ev_back === 2); // 2 = all-pages → fixed
+    } else {
+      setBackgroundImage(null);
+      setIsGlobalBackground(false);
     }
-  }, [eventData, notes]);
+
+    // Logo
+    if (eventData.logo && eventData.ev_logo === 1) {
+      const fullLogoUrl = eventData.logo.startsWith('http')
+        ? eventData.logo
+        : `${baseUrl}${eventData.logo}`;
+      setLogoImage(fullLogoUrl);
+    } else {
+      setLogoImage('/logo.jpg'); // fallback local
+    }
+
+    // Notes
+    if (eventData.notes && eventData.ev_note === 1) {
+      setNotes([
+        eventData.notes.note1 || '',
+        eventData.notes.note2 || '',
+        eventData.notes.note3 || '',
+      ].filter(Boolean)); // loại bỏ rỗng
+    }
+  }, [eventData]);
 
   if (isLoading) {
     return <div className="app-container">Đang tải...</div>;
@@ -126,15 +132,22 @@ function Appclien() {
     <div 
       className="app-container" 
       style={backgroundImage ? { 
-        background: `url(${backgroundImage})`,
+        backgroundImage: `url(${backgroundImage})`,
         backgroundSize: 'cover',
-        backgroundPosition: 'center center',
+        backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
         backgroundAttachment: isGlobalBackground ? 'fixed' : 'scroll'
       } : {}}
     >
       <div className="logo-container">
-        <img src={logoImage} alt="Memory Booth Logo" className="logo" />
+        <img 
+          src={logoImage} 
+          alt="Memory Booth Logo" 
+          className="logo"
+          onError={(e) => {
+            e.target.src = '/logo.jpg'; // fallback nếu lỗi
+          }}
+        />
       </div>
       
       <div className="clickable-section" onClick={handleClick}>
@@ -179,10 +192,8 @@ function Appclien() {
         <h5 className="btn-thank-you">CHÚNG MÌNH XIN CẢM ƠN</h5>
       </div>
 
-      {/* ✅ CHỈ CẦN GỌI 1 LẦN — KHÔNG CẦN QUẢN LÝ STATE, ICON, HAY LOTTIE */}
       <Chatbot />
 
-      {/* 🤖 Popup chào mừng ban đầu (vẫn giữ lại nếu cần) */}
       {showWelcomeBot && robotLottie && (
         <div
           className="welcome-bot-overlay"

@@ -759,6 +759,26 @@ const Event = () => {
                                 <input
                                     type="radio"
                                     name="apply"
+                                    value="home"
+                                    checked={bgApplyOption === "home"}
+                                    onChange={(e) => setBgApplyOption(e.target.value)}
+                                />
+                                <span className="radio-btn"></span> Áp dụng trang Home
+                            </label>
+                            <label>
+                                <input
+                                    type="radio"
+                                    name="apply"
+                                    value="all-pages"
+                                    checked={bgApplyOption === "all-pages"}
+                                    onChange={(e) => setBgApplyOption(e.target.value)}
+                                />
+                                <span className="radio-btn"></span> Áp dụng all pages
+                            </label>
+                            <label>
+                                <input
+                                    type="radio"
+                                    name="apply"
                                     value="cancel"
                                     checked={bgApplyOption === "cancel"}
                                     onChange={(e) => setBgApplyOption(e.target.value)}

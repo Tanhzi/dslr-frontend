@@ -64,13 +64,6 @@
   object-fit: contain;
 }
 
-/* style đặc biệt cho cut = 41 */
-.composite-image--cut41 {
-  /* clip từ top/right/bottom/left = 0 50% 0 0 → chỉ để lại 50% chiều rộng bên trái */
-  clip-path: inset(0 50% 0 0);
-  /* đảm bảo ảnh vẫn giữ tỉ lệ và không bị kéo méo */
-  object-fit: cover;
-}
 
 /* Cột bên phải cho thumbnails */
 .col-right {

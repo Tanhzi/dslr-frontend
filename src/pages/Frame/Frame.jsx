@@ -25,13 +25,29 @@ function Frame() {
 
   const [latestPaymentId, setLatestPaymentId] = useState(null);
   const [framesList, setFramesList] = useState([]);
-  const [currentPreviewFrameId, setCurrentPreviewFrameId] = useState(null); // ← khung đang preview
+  const [currentPreviewFrameId, setCurrentPreviewFrameId] = useState(null);
   const [previewImage, setPreviewImage] = useState(null);
   const [selectedType, setSelectedType] = useState('all');
   const [frameTypes, setFrameTypes] = useState(['all']);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
 
   const { formattedCountdown, countdown } = useCountdown();
+
+    // ✅ Áp dụng background từ localStorage nếu có
+useEffect(() => {
+  const savedBackground = localStorage.getItem('backgroundImage');
+  if (savedBackground) {
+    document.body.style.backgroundImage = `url(${savedBackground})`;
+    document.body.style.backgroundSize = 'cover';
+    document.body.style.backgroundRepeat = 'no-repeat';
+    document.body.style.backgroundAttachment = 'fixed';
+  }
+
+  // Cleanup khi rời khỏi trang
+  return () => {
+    document.body.style.backgroundImage = 'none';
+  };
+}, []);
 
   // === 1. FETCH FRAMES ===
   useEffect(() => {
@@ -40,17 +56,24 @@ function Frame() {
     const fetchFrames = async () => {
       try {
         const response = await fetch(
-          `${import.meta.env.VITE_API_BASE_URL}/frames?id_admin=${id_admin}&id_topic=${id_topic}&cuts=${cut}`
+          `${import.meta.env.VITE_API_BASE_URL}/frames-client?id_admin=${id_admin}&id_topic=${id_topic}&cuts=${cut}`
         );
         const result = await response.json();
 
         if (result.status === 'success' && result.data) {
           const processed = result.data
             .filter(f => f.frame)
-            .map(f => ({
-              ...f,
-              type: f.type || 'default'
-            }));
+            .map(f => {
+              const fullFrameUrl = f.frame.startsWith('http')
+                ? f.frame
+                : `${import.meta.env.VITE_API_BASE_URL}${f.frame}`;
+
+              return {
+                ...f,
+                frame: fullFrameUrl,
+                type: f.type || 'default'
+              };
+            });
 
           setFramesList(processed);
           setFrameTypes(['all', ...new Set(processed.map(f => f.type))]);
@@ -70,7 +93,6 @@ function Frame() {
 
     let frameIdToUse = null;
 
-    // Ưu tiên: initialSelectedFrameId nếu hợp lệ
     if (initialSelectedFrameId !== undefined) {
       const exists = framesList.some(f => f.id === initialSelectedFrameId);
       if (exists) {
@@ -80,7 +102,6 @@ function Frame() {
       }
     }
 
-    // Nếu không có initial hợp lệ → dùng khung đầu tiên
     if (frameIdToUse === null && framesList.length > 0) {
       frameIdToUse = framesList[0].id;
       setSelectedType(framesList[0].type || 'all');
@@ -89,12 +110,10 @@ function Frame() {
     setCurrentPreviewFrameId(frameIdToUse);
   }, [framesList, initialSelectedFrameId]);
 
-  // === 3. LỌC FRAMES ===
   const filteredFrames = selectedType === 'all'
     ? framesList
     : framesList.filter(frame => frame.type === selectedType);
 
-  // === 4. LẤY ID THANH TOÁN ===
   useEffect(() => {
     if (!id_admin) return;
     fetch(`${import.meta.env.VITE_API_BASE_URL}/get-new-id?id_admin=${id_admin}`)
@@ -105,7 +124,6 @@ function Frame() {
       .catch(err => console.error('Lỗi lấy id thanh toán:', err));
   }, [id_admin]);
 
-  // === 5. HÀM TẢI ẢNH ===
   const loadImage = (src) => {
     return new Promise((resolve, reject) => {
       const img = new Image();
@@ -116,7 +134,6 @@ function Frame() {
     });
   };
 
-  // === 6. TẠO PREVIEW ===
   const createPreviewImage = async () => {
     if (!compositeImage || !currentPreviewFrameId || framesList.length === 0) {
       setPreviewImage(null);
@@ -135,10 +152,12 @@ function Frame() {
 
       let w = size?.width || baseImg.width;
       let h = size?.height || baseImg.height;
-      if (cut === "41" || cut === "42" || cut === "6") {
+      if (cut === "42" || cut === "6") {
         w = 1200; h = 1800;
       } else if (cut === "3") {
         w = 1800; h = 600;
+      } else if (cut === "41") {
+        w = 600; h = 1800;
       }
 
       const canvas = document.createElement('canvas');
@@ -146,12 +165,8 @@ function Frame() {
       canvas.height = h;
       const ctx = canvas.getContext('2d');
 
-      if (cut === "41") {
-        ctx.drawImage(baseImg, 0, 0, 600, 1800);
-        ctx.drawImage(baseImg, 600, 0, 600, 1800);
-      } else {
-        ctx.drawImage(baseImg, 0, 0, w, h);
-      }
+      // ✅ VẼ ẢNH COMPOSITE MỘT LẦN DUY NHẤT — KHÔNG PHÂN BIỆT CUT
+      ctx.drawImage(baseImg, 0, 0, w, h);
       ctx.drawImage(frameImg, 0, 0, w, h);
 
       setPreviewImage(canvas.toDataURL('image/png'));
@@ -165,7 +180,6 @@ function Frame() {
     createPreviewImage();
   }, [compositeImage, currentPreviewFrameId, framesList, cut, size]);
 
-  // === 7. ĐIỀU HƯỚNG ĐẾN QR ===
   const navigateToQr = async () => {
     if (!compositeImage || !currentPreviewFrameId) return;
     const frame = framesList.find(f => f.id === currentPreviewFrameId);
@@ -177,10 +191,12 @@ function Frame() {
 
       let w = size?.width || baseImg.width;
       let h = size?.height || baseImg.height;
-      if (cut === "41" || cut === "42" || cut === "6") {
+      if (cut === "42" || cut === "6") {
         w = 1200; h = 1800;
       } else if (cut === "3") {
         w = 1800; h = 600;
+      } else if (cut === "41") {
+        w = 600; h = 1800;
       }
 
       const canvas = document.createElement('canvas');
@@ -188,12 +204,8 @@ function Frame() {
       canvas.height = h;
       const ctx = canvas.getContext('2d');
 
-      if (cut === "41") {
-        ctx.drawImage(baseImg, 0, 0, 600, 1800);
-        ctx.drawImage(baseImg, 600, 0, 600, 1800);
-      } else {
-        ctx.drawImage(baseImg, 0, 0, w, h);
-      }
+      // ✅ VẼ ẢNH COMPOSITE MỘT LẦN DUY NHẤT — KHÔNG PHÂN BIỆT CUT
+      ctx.drawImage(baseImg, 0, 0, w, h);
       ctx.drawImage(frameImg, 0, 0, w, h);
 
       navigate('/Qr', {
@@ -211,7 +223,6 @@ function Frame() {
     }
   };
 
-  // === 8. TỰ ĐỘNG TIẾP TỤC KHI HẾT GIỜ ===
   useEffect(() => {
     if (countdown === 0 && compositeImage && currentPreviewFrameId) {
       const exists = framesList.some(f => f.id === currentPreviewFrameId);
@@ -219,22 +230,18 @@ function Frame() {
     }
   }, [countdown, compositeImage, currentPreviewFrameId, framesList]);
 
-  // ✅ XỬ LÝ NHẤN TIẾP TỤC
   const handleContinue = () => {
     navigateToQr();
   };
 
-  // ✅ MỞ CHẾ ĐỘ CHỌN KHUNG
   const handleSelectFrame = () => {
     setIsSelectionMode(true);
   };
 
-  // ✅ KHI CLICK THUMBNAIL TRONG CHẾ ĐỘ CHỌN → CẬP NHẬT PREVIEW NGAY
   const handlePreviewFrame = (frameId) => {
     setCurrentPreviewFrameId(frameId);
   };
 
-  // === RENDER ===
   return (
     <div className="frame-container">
       <div className="countdown">
@@ -251,11 +258,11 @@ function Frame() {
         <div className="col-left">
           {previewImage ? (
             <div className="image-wrapper">
-              <img
-                src={previewImage}
-                alt="Preview"
-                className={`pt-2 pb-2 composite-image ${cut === "41" ? "composite-image--cut41" : ""}`}
-              />
+<img
+  src={previewImage}
+  alt="Preview"
+  className="pt-2 pb-2 composite-image"
+/>
             </div>
           ) : (
             <div className="no-image">Đang tạo ảnh xem trước...</div>
@@ -277,6 +284,9 @@ function Frame() {
                             src={frame.frame}
                             alt="Current"
                             className="current-frame-image"
+                            onError={(e) => {
+                              e.target.style.opacity = '0.5';
+                            }}
                           />
                         </div>
                         <p>Loại khung: {frame.type || 'Default'}</p>
@@ -321,6 +331,9 @@ function Frame() {
                           alt={`Frame ${frame.id}`}
                           className={`thumbnail ${frame.id === currentPreviewFrameId ? 'selected' : ''}`}
                           onClick={() => handlePreviewFrame(frame.id)}
+                          onError={(e) => {
+                            e.target.style.opacity = '0.3';
+                          }}
                         />
                       );
                     })}

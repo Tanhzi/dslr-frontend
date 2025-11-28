@@ -31,6 +31,30 @@ const Download = () => {
   const nameInputRef = useRef(null);
   const commentInputRef = useRef(null);
 
+    // Lấy thông tin từ auth
+    const getAuth = () => {
+      const saved = localStorage.getItem('auth');
+      return saved ? JSON.parse(saved) : null;
+    };
+    const [auth] = useState(getAuth());
+    const { id_admin } = auth || {};
+
+    // ✅ Áp dụng background từ localStorage nếu có
+useEffect(() => {
+  const savedBackground = localStorage.getItem('backgroundImage');
+  if (savedBackground) {
+    document.body.style.backgroundImage = `url(${savedBackground})`;
+    document.body.style.backgroundSize = 'cover';
+    document.body.style.backgroundRepeat = 'no-repeat';
+    document.body.style.backgroundAttachment = 'fixed';
+  }
+
+  // Cleanup khi rời khỏi trang
+  return () => {
+    document.body.style.backgroundImage = 'none';
+  };
+}, []);
+
   // Các state cũ (countdown, scroll, load Lottie...) giữ nguyên
   useEffect(() => {
     if (countdown <= 0) return;
@@ -173,7 +197,7 @@ const Download = () => {
           photo: ratings.photo,
           service: ratings.service,
           comment: comment.trim() || null,
-          id_admin: null
+          id_admin: id_admin,
         }),
       });
 

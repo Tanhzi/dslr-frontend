@@ -40,23 +40,6 @@ function Qr() {
   const keyboardRef = useRef(null);
   const emailInputRef = useRef(null);
 
-
-    // ✅ Áp dụng background từ localStorage nếu có
-useEffect(() => {
-  const savedBackground = localStorage.getItem('backgroundImage');
-  if (savedBackground) {
-    document.body.style.backgroundImage = `url(${savedBackground})`;
-    document.body.style.backgroundSize = 'cover';
-    document.body.style.backgroundRepeat = 'no-repeat';
-    document.body.style.backgroundAttachment = 'fixed';
-  }
-
-  // Cleanup khi rời khỏi trang
-  return () => {
-    document.body.style.backgroundImage = 'none';
-  };
-}, []);
-
   // Đóng bàn phím khi click ra ngoài
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -185,43 +168,22 @@ const handleKeyClick = (key) => {
         const config = await res.json();
         setVideoConfig(config);
 
-// Trong useEffect tạo GIF
-if (config.video === 1) {
-  // Bước 1: Xác định tỉ lệ từ ảnh đầu tiên
-  const firstImg = new Image();
-  firstImg.src = photos[0];
-  firstImg.onload = () => {
-    const targetWidth = config.gifWidth || 640;
-    const aspectRatio = firstImg.width / firstImg.height;
-    const targetHeight = Math.round(targetWidth / aspectRatio);
-
-    gifshot.createGIF(
-      {
-        images: photos,
-        interval: config.interval || 0.5,
-        gifWidth: targetWidth,
-        gifHeight: targetHeight,
-        // 👇 Quan trọng: giữ tỉ lệ bằng cách không dùng fixed height/width cứng
-        // gifshot tự scale giữ nội dung, nhưng nếu bạn set cả 2 thì nó bóp méo
-        // → nên chỉ set width, tính height theo ratio (như trên)
-      },
-      (obj) => {
-        if (!obj.error) {
-          setGifBase64(obj.image);
+        if (config.video === 1) {
+          gifshot.createGIF(
+            {
+              images: photos,
+              interval: config.interval || 0.5,
+              gifWidth: config.gifWidth || 640,
+              gifHeight: config.gifHeight || 480,
+            },
+            (obj) => {
+              if (!obj.error) setGifBase64(obj.image);
+              setIsGifReady(true);
+            }
+          );
         } else {
-          console.error('Lỗi tạo GIF:', obj.error);
+          setIsGifReady(true);
         }
-        setIsGifReady(true);
-      }
-    );
-  };
-  firstImg.onerror = () => {
-    console.error('Không load được ảnh đầu tiên để tính tỉ lệ');
-    setIsGifReady(true);
-  };
-} else {
-  setIsGifReady(true);
-}
       } catch (err) {
         console.error('Lỗi tải cấu hình video:', err);
         setIsGifReady(true);
@@ -263,43 +225,37 @@ if (config.video === 1) {
     }
   };
 
-const sendOriginalImagesEmail = async (email, images, gifData = null) => {
-  const validImages = images.filter(img =>
-    typeof img === 'string' &&
-    img.startsWith('data:image/') &&
-    img.includes(';base64,')
-  );
+  const sendOriginalImagesEmail = async (email, images) => {
+    const validImages = images.filter(img =>
+      typeof img === 'string' &&
+      img.startsWith('data:image/') &&
+      img.includes(';base64,')
+    );
 
-  // Thêm GIF nếu có
-  if (gifData) {
-    validImages.push(gifData);
-  }
-
-  if (validImages.length === 0) {
-    console.error('Không có ảnh hợp lệ để gửi');
-    return;
-  }
-
-  try {
-    const sessionId = generateSessionId();
-    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/send-original-images-email`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, session_id: sessionId, images: validImages }),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error('Lỗi từ server:', errorData);
+    if (validImages.length === 0) {
+      console.error('Không có ảnh hợp lệ để gửi');
       return;
     }
 
-    setEmailSent(true);
-  } catch (err) {
-    console.error('Gửi ảnh gốc thất bại:', err);
-    alert('Gửi email thất bại. Vui lòng thử lại.');
-  }
-};
+    try {
+      const sessionId = generateSessionId();
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/send-original-images-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, session_id: sessionId, images: validImages }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Lỗi từ server:', errorData);
+        return;
+      }
+
+      setEmailSent(true);
+    } catch (err) {
+      console.error('Gửi ảnh gốc thất bại:', err);
+    }
+  };
 
   const updateIdFrameAndIdQr = async (id, id_frame, id_qr, email = null) => {
     try {
@@ -404,7 +360,7 @@ const sendOriginalImagesEmail = async (email, images, gifData = null) => {
 
       if (doNotSaveToWeb) {
         if (emailTrimmed) {
-          sendOriginalImagesEmail(emailTrimmed, [finalImage, ...photos], gifBase64);
+          sendOriginalImagesEmail(emailTrimmed, [finalImage, ...photos]);
         }
       } else {
         const filesToUpload = [

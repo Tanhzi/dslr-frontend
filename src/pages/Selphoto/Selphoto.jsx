@@ -61,6 +61,22 @@ const SelPhoto = () => {
 
   const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
+    // ✅ Áp dụng background từ localStorage nếu có
+useEffect(() => {
+  const savedBackground = localStorage.getItem('backgroundImage');
+  if (savedBackground) {
+    document.body.style.backgroundImage = `url(${savedBackground})`;
+    document.body.style.backgroundSize = 'cover';
+    document.body.style.backgroundRepeat = 'no-repeat';
+    document.body.style.backgroundAttachment = 'fixed';
+  }
+
+  // Cleanup khi rời khỏi trang
+  return () => {
+    document.body.style.backgroundImage = 'none';
+  };
+}, []);
+
   // Tự động điền ảnh vào slots khi component mount
   useEffect(() => {
     if (photos && photos.length > 0) {
@@ -202,7 +218,7 @@ const SelPhoto = () => {
       const paddingLeft = 5;
       const paddingTop = 30;
       const paddingRight = 5;
-      const paddingBottom = 120;
+      const paddingBottom = 125;
       const gap = 1;
       imageWidth = (compositeWidth - paddingLeft - paddingRight - gap) / 2;
       imageHeight = (compositeHeight - paddingTop - paddingBottom - gap) / 2;
@@ -218,10 +234,10 @@ const SelPhoto = () => {
       compositeWidth = 300;
       compositeHeight = 900;
       const paddingLeft = 12;
-      const paddingTop = 25;
+      const paddingTop = 20;
       const paddingRight = 12;
-      const paddingBottom = 90;
-      const gap = 10;
+      const paddingBottom = 85;
+      const gap = 5;
       imageWidth = compositeWidth - paddingLeft - paddingRight;
       imageHeight = (compositeHeight - paddingTop - paddingBottom - 3 * gap) / 4;
       positions = [];
@@ -1193,7 +1209,7 @@ const SelPhoto = () => {
           </div>
         </div>
 
-        <div className="col-md-5 d-flex flex-column p-4" style={{ height: '100vh', overflow: 'auto' }}>
+        <div className="col-md-5 d-flex flex-column p-4 box-right" style={{ height: '100vh', overflow: 'auto' }}>
           <h4 className="mb-4 text-center">
             Chọn bộ lọc
           </h4>

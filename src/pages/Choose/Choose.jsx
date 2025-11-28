@@ -18,6 +18,21 @@ const Choose = () => {
   // Ref để đảm bảo in chỉ gọi 1 lần
   const printTriggeredRef = useRef(false);
 
+    // ✅ Áp dụng background từ localStorage nếu có
+useEffect(() => {
+  const savedBackground = localStorage.getItem('backgroundImage');
+  if (savedBackground) {
+    document.body.style.backgroundImage = `url(${savedBackground})`;
+    document.body.style.backgroundSize = 'cover';
+    document.body.style.backgroundRepeat = 'no-repeat';
+    document.body.style.backgroundAttachment = 'fixed';
+  }
+
+  // Cleanup khi rời khỏi trang
+  return () => {
+    document.body.style.backgroundImage = 'none';
+  };
+}, []);
   // Giảm countdown mỗi giây
   useEffect(() => {
     if (countdown <= 0) return;

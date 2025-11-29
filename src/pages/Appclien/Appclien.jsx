@@ -20,6 +20,10 @@ function Appclien() {
   const [showWelcomeBot, setShowWelcomeBot] = useState(true);
   const [robotLottie, setRobotLottie] = useState(null);
 
+  // Fullscreen state
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showFullscreenPrompt, setShowFullscreenPrompt] = useState(false);
+
   const getAuth = () => {
     const saved = localStorage.getItem('auth');
     return saved ? JSON.parse(saved) : null;
@@ -63,6 +67,49 @@ function Appclien() {
       });
   }, []);
 
+  // Fullscreen logic
+  const checkFullscreen = () => {
+    const isFull = !!(document.fullscreenElement || 
+      document.webkitFullscreenElement || 
+      document.mozFullScreenElement || 
+      document.msFullscreenElement);
+    setIsFullscreen(isFull);
+    setShowFullscreenPrompt(!isFull);
+  };
+
+  const requestFullscreen = () => {
+    const element = document.documentElement;
+    if (element.requestFullscreen) {
+      element.requestFullscreen();
+    } else if (element.webkitRequestFullscreen) {
+      element.webkitRequestFullscreen();
+    } else if (element.mozRequestFullScreen) {
+      element.mozRequestFullScreen();
+    } else if (element.msRequestFullscreen) {
+      element.msRequestFullscreen();
+    }
+  };
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      checkFullscreen();
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+
+    checkFullscreen(); // Kiểm tra ban đầu
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
+    };
+  }, []);
+
   // Fetch event data
   const { data: eventData, isLoading, error } = useQuery({
     queryKey: ['event', id_admin, id_topic],
@@ -77,20 +124,17 @@ function Appclien() {
     staleTime: 5 * 60 * 1000,
   });
 
-  // ✅ XỬ LÝ ẢNH MỚI: DÙNG TRỰC TIẾP URL TỪ BACKEND
+  // Xử lý ảnh background, logo, ghi chú từ dữ liệu sự kiện
   useEffect(() => {
     if (!eventData || eventData.status === 'error') return;
-
-    const baseUrl = "http://localhost:8000"
 
     // Background
     if (eventData.background) {
       const fullBgUrl = eventData.background.startsWith('http')
         ? eventData.background
-        : `${baseUrl}${eventData.background}`; // → http://localhost:8000/storage/...
-
+        : `${eventData.background}`;
       setBackgroundImage(fullBgUrl);
-      setIsGlobalBackground(eventData.ev_back === 2); // 2 = all-pages → fixed
+      setIsGlobalBackground(eventData.ev_back === 2);
     } else {
       setBackgroundImage(null);
       setIsGlobalBackground(false);
@@ -100,10 +144,10 @@ function Appclien() {
     if (eventData.logo && eventData.ev_logo === 1) {
       const fullLogoUrl = eventData.logo.startsWith('http')
         ? eventData.logo
-        : `${baseUrl}${eventData.logo}`;
+        : `${eventData.logo}`;
       setLogoImage(fullLogoUrl);
     } else {
-      setLogoImage('/logo.jpg'); // fallback local
+      setLogoImage('/logo.jpg');
     }
 
     // Notes
@@ -112,7 +156,7 @@ function Appclien() {
         eventData.notes.note1 || '',
         eventData.notes.note2 || '',
         eventData.notes.note3 || '',
-      ].filter(Boolean)); // loại bỏ rỗng
+      ].filter(Boolean));
     }
   }, [eventData]);
 
@@ -139,80 +183,129 @@ function Appclien() {
         backgroundAttachment: isGlobalBackground ? 'fixed' : 'scroll'
       } : {}}
     >
-      <div className="logo-container">
-        <img 
-          src={logoImage} 
-          alt="Memory Booth Logo" 
-          className="logo"
-          onError={(e) => {
-            e.target.src = '/logo.jpg'; // fallback nếu lỗi
+      {/* Nội dung chính chỉ hiển thị khi đã fullscreen */}
+      {isFullscreen && (
+        <>
+          <div className="logo-container">
+            <img 
+              src={logoImage} 
+              alt="Memory Booth Logo" 
+              className="logo"
+              onError={(e) => {
+                e.target.src = '/logo.jpg';
+              }}
+            />
+          </div>
+          
+          <div className="clickable-section" onClick={handleClick}>
+            <div className="title-container">
+              <h1 className="touch-to-start">TOUCH TO START</h1>
+              <h2 className="sub-title">CHẠM ĐỂ BẮT ĐẦU CHỤP</h2>
+            </div>
+
+            <div className="info-boxes d-flex">
+              {notes.map((note, index) => (
+                <div className="info-box" key={index}>
+                  <p className="truncated-text text1">{note}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="instruction-container">
+            <div className="instruction-row">
+              <div className="instruction-box">
+                <div className="icon-heart">
+                  <i className="fas fa-heart"></i>
+                  <span className="heart-number">1</span>
+                </div>
+                <p>KHÔNG VỨT PHỤ KIỆN XUỐNG ĐẤT KHI CHỤP</p>
+              </div>
+              <div className="instruction-box">
+                <div className="icon-heart">
+                  <i className="fas fa-heart"></i>
+                  <span className="heart-number">2</span>
+                </div>
+                <p>VUI LÒNG BỒI THƯỜNG KHI LÀM HỎNG</p>
+              </div>
+              <div className="instruction-box">
+                <div className="icon-heart">
+                  <i className="fas fa-heart"></i>
+                  <span className="heart-number">3</span>
+                </div>
+                <p>GIÚP CHÚNG MÌNH ĐẶT LẠI PHỤ KIỆN LÊN KỆ NHÉ</p>
+              </div>
+            </div>
+            <h5 className="btn-thank-you">CHÚNG MÌNH XIN CẢM ƠN</h5>
+          </div>
+
+          <Chatbot />
+
+          {showWelcomeBot && robotLottie && (
+            <div
+              className="welcome-bot-overlay"
+              onClick={() => setShowWelcomeBot(false)}
+            >
+              <div className="welcome-bot-bubble-container">
+                <div className="speech-bubble">
+                  <p className="welcome-message">
+                    Có gì thắc mắc nhấn vào icon ở góc dưới bên phải để hỏi mình nhé =))
+                  </p>
+                </div>
+                <div className="robot-lottie-wrapper">
+                  <Lottie
+                    animationData={robotLottie}
+                    loop
+                    autoplay
+                    style={{ width: '720px', height: '720px' }}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Fullscreen prompt overlay */}
+      {showFullscreenPrompt && !isFullscreen && (
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
+            backgroundColor: 'rgba(0, 0, 0, 0.9)',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 9999,
+            color: 'white',
+            textAlign: 'center',
+            fontSize: '20px',
+            fontFamily: 'Arial, sans-serif'
           }}
-        />
-      </div>
-      
-      <div className="clickable-section" onClick={handleClick}>
-        <div className="title-container">
-          <h1 className="touch-to-start">TOUCH TO START</h1>
-          <h2 className="sub-title">CHẠM ĐỂ BẮT ĐẦU CHỤP</h2>
-        </div>
-
-        <div className="info-boxes d-flex">
-          {notes.map((note, index) => (
-            <div className="info-box" key={index}>
-              <p className="truncated-text text1">{note}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="instruction-container">
-        <div className="instruction-row">
-          <div className="instruction-box">
-            <div className="icon-heart">
-              <i className="fas fa-heart"></i>
-              <span className="heart-number">1</span>
-            </div>
-            <p>KHÔNG VỨT PHỤ KIỆN XUỐNG ĐẤT KHI CHỤP</p>
-          </div>
-          <div className="instruction-box">
-            <div className="icon-heart">
-              <i className="fas fa-heart"></i>
-              <span className="heart-number">2</span>
-            </div>
-            <p>VUI LÒNG BỒI THƯỜNG KHI LÀM HỎNG</p>
-          </div>
-          <div className="instruction-box">
-            <div className="icon-heart">
-              <i className="fas fa-heart"></i>
-              <span className="heart-number">3</span>
-            </div>
-            <p>GIÚP CHÚNG MÌNH ĐẶT LẠI PHỤ KIỆN LÊN KỆ NHÉ</p>
-          </div>
-        </div>
-        <h5 className="btn-thank-you">CHÚNG MÌNH XIN CẢM ƠN</h5>
-      </div>
-
-      <Chatbot />
-
-      {showWelcomeBot && robotLottie && (
-        <div
-          className="welcome-bot-overlay"
-          onClick={() => setShowWelcomeBot(false)}
         >
-          <div className="welcome-bot-bubble-container">
-            <div className="speech-bubble">
-              <p className="welcome-message">
-                Có gì thắc mắc nhấn vào icon ở góc dưới bên phải để hỏi mình nhé =))
-              </p>
-            </div>
-            <div className="robot-lottie-wrapper">
-              <Lottie
-                animationData={robotLottie}
-                loop
-                autoplay
-                style={{ width: '720px', height: '720px' }}
-              />
-            </div>
+          <div>
+            <h2 style={{ margin: '0 0 16px', fontSize: '28px' }}>Vui lòng mở toàn màn hình</h2>
+            <p style={{ margin: '0 0 20px', lineHeight: 1.5 }}>
+              Ấn <strong>F11</strong> hoặc nhấn nút bên dưới để trải nghiệm tốt nhất.
+            </p>
+<button
+  onClick={requestFullscreen}
+  style={{
+    padding: '12px 24px',
+    fontSize: '18px',
+    backgroundColor: '#e91e63',
+    color: 'white',
+    border: 'none',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontWeight: 'bold'
+  }}
+>
+  Mở toàn màn hình
+</button>
           </div>
         </div>
       )}

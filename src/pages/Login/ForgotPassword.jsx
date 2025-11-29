@@ -233,11 +233,6 @@ function ForgotPassword() {
         <button className="link-button" onClick={() => navigate('/')}>
           ← Quay lại đăng nhập
         </button>
-        {step === 1 && (
-          <button className="link-button" onClick={() => navigate('/Register')}>
-            Chưa có tài khoản? Đăng ký ngay →
-          </button>
-        )}
       </div>
     </div>
   );

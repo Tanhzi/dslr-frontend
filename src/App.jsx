@@ -136,9 +136,6 @@ function App() {
       </div>
 
       <div className="auth-links">
-        <button className="link-button" onClick={() => navigate('/Register')}>
-          Chưa có tài khoản? Đăng ký →
-        </button>
         <button className="link-button" onClick={() => navigate('/ForgotPassword')}>
           Quên mật khẩu? →
         </button>

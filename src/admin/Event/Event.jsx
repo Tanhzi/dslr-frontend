@@ -98,24 +98,28 @@ const Event = () => {
         }
     }, [id_admin]);
 
-    const refreshEvents = () => {
-        fetch(`${API_URL}/events-admin?id_admin=${id_admin}`)
-            .then((res) => res.json())
-            .then((data) => {
-                if (Array.isArray(data)) {
-                    setEvents(data);
-                } else if (data && Array.isArray(data.data)) {
-                    setEvents(data.data);
-                } else {
-                    console.warn("Unexpected events API response:", data);
-                    setEvents([]);
-                }
-            })
-            .catch((error) => {
-                console.error("Error fetching events:", error);
-                setEvents([]);
-            });
-    };
+const refreshEvents = () => {
+    fetch(`${API_URL}/events-admin?id_admin=${id_admin}`)
+        .then((res) => res.json())
+        .then((data) => {
+            let eventsData = [];
+            if (Array.isArray(data)) {
+                eventsData = data;
+            } else if (data && Array.isArray(data.data)) {
+                eventsData = data.data;
+            } else {
+                console.warn("Unexpected events API response:", data);
+            }
+
+            // ✅ SẮP XẾP THEO `id` TĂNG DẦN  (2 sắp xếp theo id)
+            const sortedEvents = eventsData.sort((a, b) => a.id - b.id);
+            setEvents(sortedEvents);
+        })
+        .catch((error) => {
+            console.error("Error fetching events:", error);
+            setEvents([]);
+        });
+};
 
     const refreshUsers = () => {
         fetch(`${API_URL}/users-admin?id_admin=${id_admin}`)
@@ -172,12 +176,39 @@ const Event = () => {
     };
 
     // Hàm tải ảnh logo
-    const handleSaveLogoImage = () => {
-        if (!selectedEvent) {
-            alert("Không có sự kiện được chọn!");
-            return;
-        }
+const handleSaveLogoImage = () => {
+    if (!selectedEvent) {
+        alert("Không có sự kiện được chọn!");
+        return;
+    }
 
+    // Nếu KHÔNG có file mới, chỉ cập nhật `apply`
+    if (!logoFile) {
+        const formData = new URLSearchParams();
+        formData.append("apply", logoApplyOption);
+
+        fetch(`${API_URL}/events-admin/${selectedEvent.id}/logo?id_admin=${id_admin}`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+            body: formData.toString()
+        })
+            .then((res) => res.json())
+            .then((data) => {
+                if (data.status === "success") {
+                    alert("Cập nhật tùy chọn logo thành công!");
+                    refreshEvents();
+                } else {
+                    alert("Lỗi: " + data.message);
+                }
+            })
+            .catch((error) => {
+                console.error("Error updating logo apply:", error);
+                alert("Có lỗi khi cập nhật tùy chọn.");
+            });
+    } else {
+        // Có file mới → upload cả file và apply
         const formData = new FormData();
         formData.append("logo", logoFile);
         formData.append("apply", logoApplyOption);
@@ -199,9 +230,11 @@ const Event = () => {
                 console.error("Error updating logo:", error);
                 alert("Có lỗi khi cập nhật logo.");
             });
+    }
 
-        setShowLogoUploadForm(false);
-    };
+    setShowLogoUploadForm(false);
+    setLogoFile(null); // Reset sau khi lưu
+};
 
     // Hàm tạo event mới
     const handleAddEvent = () => {
@@ -216,14 +249,18 @@ const Event = () => {
             apply: selectedUsers
         };
 
-        fetch(`${API_URL}/events-admin?id_admin=${id_admin}`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            },
-            body: JSON.stringify(payload)
-        })
+// ✅ ĐÚNG: Gửi JSON
+fetch(`${API_URL}/events-admin?id_admin=${id_admin}`, {
+    method: "POST",
+    headers: {
+        "Content-Type": "application/json", // ← QUAN TRỌNG
+    },
+    body: JSON.stringify({
+        name: eventName,
+        date: eventDate,
+        apply: selectedUsers, // [1, 2, 3]
+    })
+})
             .then(res => res.json())
             .then(async data => {
                 if (data.status !== "success") {
@@ -349,12 +386,39 @@ const Event = () => {
         }
     };
 
-    const handleSaveBackgroundImage = () => {
-        if (!selectedEvent) {
-            alert("Không có sự kiện được chọn!");
-            return;
-        }
+const handleSaveBackgroundImage = () => {
+    if (!selectedEvent) {
+        alert("Không có sự kiện được chọn!");
+        return;
+    }
 
+    // Nếu KHÔNG có file mới, chỉ cập nhật `apply`
+    if (!backgroundFile) {
+        const formData = new URLSearchParams();
+        formData.append("apply", bgApplyOption);
+
+        fetch(`${API_URL}/events-admin/${selectedEvent.id}/background?id_admin=${id_admin}`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+            body: formData.toString()
+        })
+            .then((res) => res.json())
+            .then((data) => {
+                if (data.status === "success") {
+                    alert("Cập nhật tùy chọn ảnh nền thành công!");
+                    refreshEvents();
+                } else {
+                    alert("Lỗi: " + data.message);
+                }
+            })
+            .catch((error) => {
+                console.error("Error updating background apply:", error);
+                alert("Có lỗi khi cập nhật tùy chọn.");
+            });
+    } else {
+        // Có file mới → upload cả file và apply
         const formData = new FormData();
         formData.append("background", backgroundFile);
         formData.append("apply", bgApplyOption);
@@ -376,9 +440,11 @@ const Event = () => {
                 console.error("Error updating background image:", error);
                 alert("Có lỗi khi cập nhật ảnh nền.");
             });
+    }
 
-        setShowUploadForm(false);
-    };
+    setShowUploadForm(false);
+    setBackgroundFile(null); // Reset sau khi lưu
+};
 
     // === Cập nhật logic lọc & tìm kiếm ===
     const filteredAndSearchedEvents = useMemo(() => {
@@ -749,86 +815,146 @@ const Event = () => {
             )}
 
             {/* Modal tải ảnh nền */}
-            {showUploadForm && (
-                <div className="event-modal-overlay" onClick={() => setShowUploadForm(false)}>
-                    <div className="event-modal-content" onClick={e => e.stopPropagation()}>
-                        <h3>Tải Ảnh Nền</h3>
-                        <input type="file" onChange={handleBackgroundFileChange} accept="image/*" />
-                        <div className="checkbox-group">
-                            <label>
-                                <input
-                                    type="radio"
-                                    name="apply"
-                                    value="home"
-                                    checked={bgApplyOption === "home"}
-                                    onChange={(e) => setBgApplyOption(e.target.value)}
-                                />
-                                <span className="radio-btn"></span> Áp dụng trang Home
-                            </label>
-                            <label>
-                                <input
-                                    type="radio"
-                                    name="apply"
-                                    value="all-pages"
-                                    checked={bgApplyOption === "all-pages"}
-                                    onChange={(e) => setBgApplyOption(e.target.value)}
-                                />
-                                <span className="radio-btn"></span> Áp dụng all pages
-                            </label>
-                            <label>
-                                <input
-                                    type="radio"
-                                    name="apply"
-                                    value="cancel"
-                                    checked={bgApplyOption === "cancel"}
-                                    onChange={(e) => setBgApplyOption(e.target.value)}
-                                />
-                                <span className="radio-btn"></span> Hủy áp dụng
-                            </label>
-                        </div>
-                        <div className="modal-buttons">
-                            <button className="cancel-btn" onClick={() => setShowUploadForm(false)}>Hủy</button>
-                            <button className="save-btn" onClick={handleSaveBackgroundImage}>Lưu</button>
-                        </div>
-                    </div>
+{/* Modal tải ảnh nền */}
+{showUploadForm && selectedEvent && (
+// Trong modal background
+<div className="event-modal-overlay" onClick={() => {
+    setShowUploadForm(false);
+    setBackgroundFile(null); // ← thêm dòng này
+}}>
+        <div className="event-modal-content" onClick={e => e.stopPropagation()}>
+            <h3>Tải Ảnh Nền</h3>
+
+            {/* Hiển thị ảnh nền hiện tại nếu có */}
+            {selectedEvent.background && (
+                <div style={{ marginBottom: '15px' }}>
+                    <p style={{ marginBottom: '5px', fontSize: '14px', color: '#666' }}>Ảnh nền hiện tại:</p>
+                    <img
+                        src={selectedEvent.background}
+                        alt="Ảnh nền hiện tại"
+                        style={{
+                            maxWidth: '100%',
+                            maxHeight: '200px',
+                            border: '1px solid #ddd',
+                            borderRadius: '4px'
+                        }}
+                    />
                 </div>
             )}
 
+            <input
+                type="file"
+                onChange={handleBackgroundFileChange}
+                accept="image/*"
+                style={{ marginBottom: '15px' }}
+            />
+
+            <div className="checkbox-group">
+                <label>
+                    <input
+                        type="radio"
+                        name="apply"
+                        value="home"
+                        checked={bgApplyOption === "home"}
+                        onChange={(e) => setBgApplyOption(e.target.value)}
+                    />
+                    <span className="radio-btn"></span> Áp dụng trang Home
+                </label>
+                <label>
+                    <input
+                        type="radio"
+                        name="apply"
+                        value="all-pages"
+                        checked={bgApplyOption === "all-pages"}
+                        onChange={(e) => setBgApplyOption(e.target.value)}
+                    />
+                    <span className="radio-btn"></span> Áp dụng all pages
+                </label>
+                <label>
+                    <input
+                        type="radio"
+                        name="apply"
+                        value="cancel"
+                        checked={bgApplyOption === "cancel"}
+                        onChange={(e) => setBgApplyOption(e.target.value)}
+                    />
+                    <span className="radio-btn"></span> Hủy áp dụng
+                </label>
+            </div>
+
+            <div className="modal-buttons">
+                <button className="cancel-btn" onClick={() => setShowUploadForm(false)}>Hủy</button>
+                <button className="save-btn" onClick={handleSaveBackgroundImage}>Lưu</button>
+            </div>
+        </div>
+    </div>
+)}
+
             {/* Modal tải logo */}
-            {showLogoUploadForm && (
-                <div className="event-modal-overlay" onClick={() => setShowLogoUploadForm(false)}>
-                    <div className="event-modal-content" onClick={e => e.stopPropagation()}>
-                        <h3>Tải Logo</h3>
-                        <input type="file" onChange={(e) => setLogoFile(e.target.files[0])} accept="image/*" />
-                        <div className="checkbox-group">
-                            <label>
-                                <input
-                                    type="radio"
-                                    name="applyLogo"
-                                    value="home"
-                                    checked={logoApplyOption === "home"}
-                                    onChange={(e) => setLogoApplyOption(e.target.value)}
-                                />
-                                <span className="radio-btn"></span> Áp dụng trang Home
-                            </label>
-                            <label>
-                                <input
-                                    type="radio"
-                                    name="applyLogo"
-                                    value="cancel"
-                                    checked={logoApplyOption === "cancel"}
-                                    onChange={(e) => setLogoApplyOption(e.target.value)}
-                                />
-                                <span className="radio-btn"></span> Hủy áp dụng
-                            </label>
-                        </div>
-                        <div className="modal-buttons">
-                            <button className="cancel-btn" onClick={() => setShowLogoUploadForm(false)}>Hủy</button>
-                            <button className="save-btn" onClick={handleSaveLogoImage}>Lưu</button>
-                        </div>
-                    </div>
+{/* Modal tải logo */}
+{showLogoUploadForm && selectedEvent && (
+// Trong modal background
+<div className="event-modal-overlay" onClick={() => {
+    setShowUploadForm(false);
+    setBackgroundFile(null); // ← thêm dòng này
+}}>
+        <div className="event-modal-content" onClick={e => e.stopPropagation()}>
+            <h3>Tải Logo</h3>
+
+            {/* Hiển thị logo hiện tại nếu có */}
+            {selectedEvent.logo && (
+                <div style={{ marginBottom: '15px' }}>
+                    <p style={{ marginBottom: '5px', fontSize: '14px', color: '#666' }}>Logo hiện tại:</p>
+                    <img
+                        src={selectedEvent.logo}
+                        alt="Logo hiện tại"
+                        style={{
+                            maxWidth: '100%',
+                            maxHeight: '150px',
+                            border: '1px solid #ddd',
+                            borderRadius: '4px'
+                        }}
+                    />
                 </div>
             )}
+
+            <input
+                type="file"
+                onChange={(e) => setLogoFile(e.target.files[0])}
+                accept="image/*"
+                style={{ marginBottom: '15px' }}
+            />
+
+            <div className="checkbox-group">
+                <label>
+                    <input
+                        type="radio"
+                        name="applyLogo"
+                        value="home"
+                        checked={logoApplyOption === "home"}
+                        onChange={(e) => setLogoApplyOption(e.target.value)}
+                    />
+                    <span className="radio-btn"></span> Áp dụng trang Home
+                </label>
+                <label>
+                    <input
+                        type="radio"
+                        name="applyLogo"
+                        value="cancel"
+                        checked={logoApplyOption === "cancel"}
+                        onChange={(e) => setLogoApplyOption(e.target.value)}
+                    />
+                    <span className="radio-btn"></span> Hủy áp dụng
+                </label>
+            </div>
+
+            <div className="modal-buttons">
+                <button className="cancel-btn" onClick={() => setShowLogoUploadForm(false)}>Hủy</button>
+                <button className="save-btn" onClick={handleSaveLogoImage}>Lưu</button>
+            </div>
+        </div>
+    </div>
+)}
 
             {/* Modal tạo ghi chú */}
             {showTextForm && (

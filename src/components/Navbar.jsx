@@ -70,24 +70,53 @@ const Navbar = ({ sidebarCollapsed, onToggleSidebar }) => {
           </div>
           <div className="header-right">
             <div className="user-info-dropdown">
-              <div className={`dropdown ${userDropdownOpen ? 'show' : ''}`}>
-                <a
-                  className="dropdown-toggle"
-                  href="#"
-                  role="button"
-                  onClick={toggleUserDropdown}
-                >
-                  <span className="user-icon">
-                    <i className="bi bi-person-fill" />
-                  </span>
-                  <span className="user-name">Xin chào {username || 'admin'}</span>
-                </a>
-                <div className={`dropdown-menu dropdown-menu-right ${userDropdownOpen ? 'show' : ''}`}>
-                  <a onClick={handleLogout} style={{ cursor: 'pointer' }}>
-                    <i className="bi bi-box-arrow-right" /> Đăng xuất
-                  </a>
-                </div>
-              </div>
+<div className={`dropdown ${userDropdownOpen ? 'show' : ''}`}>
+  <a
+    className="dropdown-toggle"
+    href="#"
+    role="button"
+    onClick={toggleUserDropdown}
+  >
+    <span className="user-icon">
+      <i className="bi bi-person-fill" />
+    </span>
+    <span className="user-name">Xin chào {username || 'admin'}</span>
+  </a>
+  <div className={`dropdown-menu dropdown-menu-right ${userDropdownOpen ? 'show' : ''}`}>
+    {/* Đổi mật khẩu */}
+    <a
+      onClick={() => {
+        setUserDropdownOpen(false);
+        navigate('/ChangePassword');
+      }}
+      style={{ cursor: 'pointer' }}
+    >
+      <i className="bi bi-key" /> Đổi mật khẩu
+    </a>
+
+    {/* Quên mật khẩu (dành cho cả khi đang đăng nhập – có thể dùng để khôi phục nếu quên) */}
+    <a
+      onClick={() => {
+        setUserDropdownOpen(false);
+        navigate('/ForgotPassword');
+      }}
+      style={{ cursor: 'pointer' }}
+    >
+      <i className="bi bi-question-circle" /> Quên mật khẩu?
+    </a>
+
+    {/* Đăng xuất */}
+    <a
+      onClick={() => {
+        setUserDropdownOpen(false);
+        handleLogout();
+      }}
+      style={{ cursor: 'pointer' }}
+    >
+      <i className="bi bi-box-arrow-right" /> Đăng xuất
+    </a>
+  </div>
+</div>
             </div>
           </div>
         </div>

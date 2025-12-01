@@ -30,6 +30,7 @@ function Photo() {
   const [currentAppliedFiltersState, setCurrentAppliedFiltersState] = useState({});
 
   const [previewCrop, setPreviewCrop] = useState(null);
+  const photosContainerRef = useRef(null);
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -446,12 +447,22 @@ function Photo() {
     }, 'image/jpeg', 0.92);
   };
 
-  const applyCapturedPhoto = (dataUrl) => {
-    setPhotos((prev) => [...prev, dataUrl]);
-    setPhotoIndex((prev) => prev + 1);
-    setFlash(true);
-    setTimeout(() => setFlash(false), 200);
-  };
+const applyCapturedPhoto = (dataUrl) => {
+  setPhotos((prev) => [...prev, dataUrl]);
+  setPhotoIndex((prev) => prev + 1);
+  setFlash(true);
+  setTimeout(() => setFlash(false), 200);
+  
+  // Cuộn đến ảnh mới nhất sau khi render
+  setTimeout(() => {
+    if (photosContainerRef.current && photosContainerRef.current.lastElementChild) {
+      photosContainerRef.current.lastElementChild.scrollIntoView({
+        behavior: 'smooth',
+        block: 'end'
+      });
+    }
+  }, 50); // Đợi DOM cập nhật
+};
 
   const handleScreenClick = () => {
     if (!isStarted) setIsStarted(true);
@@ -544,7 +555,7 @@ function Photo() {
       <div className="photo-counter-top-right">{getCurrentPhotoDisplay()}</div>
 
       {photos.length > 0 && (
-        <div className="captured-photos-column">
+<div className="captured-photos-column" ref={photosContainerRef}>
           <div className="captured-photos-title">Ảnh đã chụp ({photos.length}/{maxPhotos})</div>
           {photos.map((photo, index) => (
             <img

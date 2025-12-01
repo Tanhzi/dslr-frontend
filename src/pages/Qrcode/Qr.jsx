@@ -449,9 +449,6 @@ const sendOriginalImagesEmail = async (email, images, gifData = null) => {
               alt="Ảnh preview"
               className="preview-image-main"
             />
-            {doNotSaveToWeb && (
-              <div className="privacy-note">🔒 Ảnh sẽ không được lưu trữ</div>
-            )}
           </div>
         </div>
 

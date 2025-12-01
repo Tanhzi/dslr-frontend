@@ -54,6 +54,7 @@ function App() {
         const auth = {
           id: data.id,
           username: data.username,
+          email: data.email,
           role: data.role,
           id_admin: data.id_admin || '',
           id_topic: data.id_topic || '',

@@ -128,8 +128,15 @@ html, body {
   font-weight: 600;
   margin: 0;
   font-size: 18px;
-  line-height: 1.5;
-  white-space: pre-line; /* Để hiển thị \n trong note */
+  line-height: 1.4;
+  /* Giới hạn 3 dòng, xuống dòng tự động, hiển thị ... nếu vượt */
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: normal; /* Cho phép xuống dòng */
 }
 
 /* Instruction Container - ở dưới cùng */

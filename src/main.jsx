@@ -13,6 +13,7 @@ import AdminLayout from './layouts/AdminLayout';
 import App from './App'; // Trang đăng nhập
 import Register from './pages/Login/Register';
 import ForgotPassword from './pages/Login/ForgotPassword';
+import ChangePassword from './pages/Login/ChangePassword';
 
 // Pages - Client flow
 import Appclien from './pages/Appclien/Appclien';
@@ -107,6 +108,16 @@ const router = createHashRouter([
     element: (
       <RootLayout>
         <ForgotPassword />
+      </RootLayout>
+    ),
+    errorElement: <ErrorPage />,
+  },
+
+  {
+    path: '/ChangePassword',
+    element: (
+      <RootLayout>
+        <ChangePassword />
       </RootLayout>
     ),
     errorElement: <ErrorPage />,

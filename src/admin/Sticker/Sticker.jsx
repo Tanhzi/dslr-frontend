@@ -34,7 +34,7 @@ const Sticker = () => {
   const [editFormData, setEditFormData] = useState({ id_topic: '', type: '', file: null });
 
   const itemsPerPage = 10;
-  const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+  const API_URL = import.meta.env.VITE_API_BASE_URL ;
 
   const filterWrapperRef = useRef(null);
 

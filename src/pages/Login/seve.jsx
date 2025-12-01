@@ -5,7 +5,6 @@ import './AuthCommon.css';
 function ForgotPassword() {
   const [step, setStep] = useState(1); // 1: email, 2: OTP, 3: new password
   const [email, setEmail] = useState('');
-  const [isEmailLocked, setIsEmailLocked] = useState(false);
   const [otp, setOtp] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -14,17 +13,7 @@ function ForgotPassword() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
 
-  // ✅ Kiểm tra trạng thái đăng nhập
-  const isAuthenticated = !!JSON.parse(localStorage.getItem('auth'));
-
-  // ✅ Tự động điền email nếu đã đăng nhập
   useEffect(() => {
-    const auth = JSON.parse(localStorage.getItem('auth'));
-    if (auth?.email) {
-      setEmail(auth.email);
-      setIsEmailLocked(true);
-    }
-
     const timer = setTimeout(() => setIsLoading(false), 100);
     return () => clearTimeout(timer);
   }, []);
@@ -32,7 +21,7 @@ function ForgotPassword() {
   // Bước 1: Gửi mã xác nhận
   const handleSendOtp = async (e) => {
     e.preventDefault();
-    setMessage('');
+    setMessage(''); // Xoá message cũ
 
     if (!email) {
       setMessage('Vui lòng nhập email của bạn.');
@@ -67,7 +56,7 @@ function ForgotPassword() {
   // Bước 2: Xác minh OTP
   const handleVerifyOtp = async (e) => {
     e.preventDefault();
-    setMessage('');
+    setMessage(''); // Xoá message cũ
 
     if (!otp.trim()) {
       setMessage('Vui lòng nhập mã xác nhận.');
@@ -103,7 +92,7 @@ function ForgotPassword() {
   // Bước 3: Đặt lại mật khẩu
   const handleResetPassword = async (e) => {
     e.preventDefault();
-    setMessage('');
+    setMessage(''); // Xoá message cũ ngay lập tức
 
     if (newPassword !== confirmPassword) {
       setMessage('Mật khẩu mới và xác nhận không khớp.');
@@ -120,11 +109,12 @@ function ForgotPassword() {
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/reset-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        // ✅ GỬI ĐỦ 4 TRƯỜNG ĐỂ LARAVEL VALIDATE `confirmed` THÀNH CÔNG
         body: JSON.stringify({
           email,
           otp,
           password: newPassword,
-          password_confirmation: confirmPassword,
+          password_confirmation: confirmPassword, // ← BẮT BUỘC CHO RULE `confirmed`
         }),
       });
 
@@ -156,15 +146,7 @@ function ForgotPassword() {
       </div>
 
       {message && (
-        <div className={`message ${
-          message.includes('thất bại') ||
-          message.includes('không hợp lệ') ||
-          message.includes('không khớp') ||
-          message.includes('hết hạn') ||
-          message.includes('không chính xác')
-            ? 'error'
-            : 'success'
-        }`}>
+        <div className={`message ${message.includes('thất bại') || message.includes('không hợp lệ') || message.includes('không khớp') || message.includes('hết hạn') ? 'error' : 'success'}`}>
           {message}
         </div>
       )}
@@ -177,13 +159,12 @@ function ForgotPassword() {
               type="email"
               placeholder="Email"
               value={email}
-              onChange={(e) => !isEmailLocked && setEmail(e.target.value)}
+              onChange={(e) => setEmail(e.target.value)}
               aria-label="Email"
               disabled={isSubmitting}
-              readOnly={isEmailLocked}
             />
           </div>
-          <button type="submit" className="auth-button" disabled={isSubmitting || !email}>
+          <button type="submit" className="auth-button" disabled={isSubmitting}>
             {isSubmitting ? 'Đang gửi...' : 'GỬI MÃ XÁC NHẬN'}
           </button>
         </form>
@@ -248,10 +229,9 @@ function ForgotPassword() {
         </form>
       )}
 
-      {/* ✅ NÚT QUAY LẠI – THAY ĐỔI TEXT THEO TRẠNG THÁI ĐĂNG NHẬP */}
       <div className="auth-links">
-        <button className="link-button" onClick={() => navigate(-1)}>
-          {isAuthenticated ? '← Quay lại' : '← Quay lại đăng nhập'}
+        <button className="link-button" onClick={() => navigate('/')}>
+          ← Quay lại đăng nhập
         </button>
       </div>
     </div>

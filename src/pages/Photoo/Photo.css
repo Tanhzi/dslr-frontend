@@ -117,21 +117,21 @@
 }
 
 /* Phần mới: Cột dọc hiển thị tất cả ảnh đã chụp */
-.captured-photos-column {
+/* .captured-photos-column {
   position: absolute;
-  top: 70px; /* Dưới tiêu đề photo-counter */
+  top: 70px;
   right: 20px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  max-height: calc(100vh - 100px); /* Giới hạn chiều cao để scroll nếu nhiều */
-  overflow-y: auto;
+  max-height: 80vh;
+  overflow-y: hidden; 
   z-index: 20;
   pointer-events: none;
-  background-color: rgba(0, 0, 0, 0.5); /* Nền mờ để dễ nhìn */
+  background-color: rgba(0, 0, 0, 0.5);
   padding: 10px;
   border-radius: 8px;
-}
+} */
 
 .captured-photos-title {
   color: white;
@@ -183,11 +183,6 @@
     padding: 8px 12px;
   }
   
-  .captured-photos-column {
-    top: 60px;
-    right: 15px;
-    padding: 8px;
-  }
   
   .captured-photos-title {
     font-size: 14px;
